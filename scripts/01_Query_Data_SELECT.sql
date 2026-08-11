@@ -338,3 +338,418 @@ SELECT
     first_name,
     'New Customer' AS customer_type
 FROM customers;
+
+
+
+
+
+
+More practice
+1. SELECT — Column/Data নির্বাচন 🎯
+SELECT বলে কোন data/column দেখতে চাই।
+উদাহরণ
+SELECT
+    first_name,
+    country,
+    score
+FROM customers;
+
+
+2. FROM — কোন Table থেকে Data নেব 📦
+FROM বলে data কোথা থেকে আসবে।
+SELECT
+    first_name,
+    country
+FROM customers;
+
+
+আরেকটি Example
+SELECT *
+FROM orders;
+মানে orders table-এর সব column এবং row।
+
+
+3. WHERE — Row Filter 🔎
+WHERE নির্দিষ্ট row filter করে।
+Germany-এর customers
+SELECT
+    first_name,
+    country,
+    score
+FROM customers
+WHERE country = 'Germany';
+শুধু Germany-এর customer আসবে।
+
+
+
+Score 800-এর বেশি
+SELECT
+    first_name,
+    score
+FROM customers
+WHERE score > 800;
+
+
+
+Multiple Conditions
+SELECT
+    first_name,
+    country,
+    score
+FROM customers
+WHERE country = 'Germany'
+  AND score > 800;
+
+
+
+
+4. ORDER BY — Result Sort 🔢
+ORDER BY result-কে সাজায়।
+Highest score → Lowest
+SELECT
+    first_name,
+    score
+FROM customers
+ORDER BY score DESC;
+DESC = বড় → ছোট
+
+
+
+
+Lowest → Highest
+SELECT
+    first_name,
+    score
+FROM customers
+ORDER BY score ASC;
+ASC = ছোট → বড়।
+
+
+
+
+Multiple Sorting
+SELECT
+    first_name,
+    country,
+    score
+FROM customers
+ORDER BY
+    country ASC,
+    score DESC;
+এখানে প্রথমে country অনুযায়ী sort হবে।
+তারপর একই country-এর মধ্যে highest score আগে আসবে।
+
+
+
+
+
+5. GROUP BY — Data Group করা 📊
+GROUP BY একই ধরনের data-কে group করে।
+ধরুন:
+USA
+USA
+USA
+UK
+UK
+Germany
+Germany
+GROUP BY country করলে:
+USA
+UK
+Germany
+তারপর aggregate function ব্যবহার করে প্রতিটি group-এর calculation করতে পারেন।
+
+
+
+
+
+Country অনুযায়ী customer count
+SELECT
+    country,
+    COUNT(*) AS total_customers
+FROM customers
+GROUP BY country;
+
+
+
+Country অনুযায়ী total score
+SELECT
+    country,
+    SUM(score) AS total_score
+FROM customers
+GROUP BY country;
+
+
+
+
+
+6. HAVING — Group Filter 🎯
+WHERE এবং HAVING-এর পার্থক্য খুব গুরুত্বপূর্ণ।
+
+Example
+SELECT
+    country,
+    AVG(score) AS avg_score
+FROM customers
+GROUP BY country
+HAVING AVG(score) > 700;
+প্রথমে country অনুযায়ী group হবে:
+
+
+
+
+
+7. DISTINCT — Duplicate Remove 🧹
+একই country অনেকবার থাকতে পারে:
+USA
+USA
+USA
+UK
+UK
+Germany
+Germany
+আপনি যদি unique country চান:
+SELECT DISTINCT
+    country
+FROM customers;
+
+
+
+
+
+⚠️ গুরুত্বপূর্ণ
+DISTINCT পুরো selected combination-এর duplicate remove করে।
+SELECT DISTINCT
+    country,
+    city
+FROM customers;
+এখানে country + city combination unique হবে।
+
+
+
+
+
+
+
+8. TOP — Limited Rows 🔝
+শুধু প্রথম 3টি row:
+SELECT TOP 3
+    *
+FROM customers;
+কিন্তু business analysis-এ সাধারণত ORDER BY সহ ব্যবহার করা উচিত।
+Top 3 highest-score customers
+SELECT TOP 3
+    first_name,
+    country,
+    score
+FROM customers
+ORDER BY score DESC;
+
+
+
+
+
+🔥 Best Practice
+এটা:
+SELECT TOP 3 *
+FROM customers;
+এর চেয়ে এটা meaningful:
+SELECT TOP 3
+    first_name,
+    country,
+    score
+FROM customers
+ORDER BY score DESC;
+কারণ আপনি clearly define করেছেন কোন 3টি record চান।
+
+
+
+
+
+9. SUM() — Total বের করা 💰
+SUM() numeric column-এর total বের করে।
+সব customer-এর total score
+SELECT
+    SUM(score) AS total_score
+FROM customers;
+Country অনুযায়ী total score
+SELECT
+    country,
+    SUM(score) AS total_score
+FROM customers
+GROUP BY country;
+Sales Example
+SELECT
+    SUM(sales_amount) AS total_sales
+FROM orders;
+এটা Data Analyst-এর খুব common calculation।
+
+
+
+
+
+10. AVG() — Average বের করা 📈
+AVG() average value বের করে।
+Customer average score
+SELECT
+    AVG(score) AS average_score
+FROM customers;
+Country-wise average
+SELECT
+    country,
+    AVG(score) AS average_score
+FROM customers
+GROUP BY country;
+Real Business Question
+কোন দেশের customers-এর average score সবচেয়ে বেশি?
+
+SELECT
+    country,
+    AVG(score) AS average_score
+FROM customers
+GROUP BY country
+ORDER BY average_score DESC;
+
+
+
+
+
+
+11. COUNT() — কতগুলো Row আছে 🔢
+COUNT() count করে।
+Total customers
+SELECT
+    COUNT(*) AS total_customers
+FROM customers;
+Result:
+50
+Country-wise customer count
+SELECT
+    country,
+    COUNT(*) AS total_customers
+FROM customers
+GROUP BY country;
+COUNT(*) vs COUNT(column)
+দুটোর পার্থক্য গুরুত্বপূর্ণ।
+COUNT(*)
+SELECT COUNT(*)
+FROM customers;
+সব row count করে।
+COUNT(score)
+SELECT COUNT(score)
+FROM customers;
+score-এর মধ্যে NULL থাকলে সেগুলো count করবে না।
+
+
+
+
+
+
+12. MIN() — Smallest Value ⬇️
+MIN() সবচেয়ে ছোট value বের করে।
+SELECT
+    MIN(score) AS lowest_score
+FROM customers;
+Country-wise lowest score
+SELECT
+    country,
+    MIN(score) AS lowest_score
+FROM customers
+GROUP BY country;
+Orders-এর lowest sales
+SELECT
+    MIN(sales_amount) AS minimum_sales
+FROM orders;
+
+
+
+
+
+
+13. MAX() — Largest Value ⬆️
+MAX() সবচেয়ে বড় value বের করে।
+SELECT
+    MAX(score) AS highest_score
+FROM customers;
+Country-wise highest score
+SELECT
+    country,
+    MAX(score) AS highest_score
+FROM customers
+GROUP BY country;
+Highest sales transaction
+SELECT
+    MAX(sales_amount) AS highest_sales
+FROM orders;
+
+
+
+
+
+
+
+
+14. AS — Alias / নতুন নাম 🏷️
+AS দিয়ে output column-এর temporary নাম দেওয়া হয়।
+SELECT
+    first_name AS customer_name,
+    country AS customer_country,
+    score AS customer_score
+FROM customers;
+আগে:
+first_name
+country
+score
+এখন:
+customer_name
+customer_country
+customer_score
+
+
+
+
+
+
+Aggregate-এর সাথে AS
+এটা খুব common:
+SELECT
+    SUM(sales_amount) AS total_sales,
+    AVG(sales_amount) AS average_sales,
+    COUNT(*) AS total_orders,
+    MIN(sales_amount) AS minimum_sales,
+    MAX(sales_amount) AS maximum_sales
+FROM orders;
+
+
+
+
+
+
+
+🔥 সবগুলো একসাথে
+এটাই সবচেয়ে গুরুত্বপূর্ণ real-world pattern:
+SELECT
+    country,
+    COUNT(*) AS total_customers,
+    SUM(score) AS total_score,
+    AVG(score) AS average_score,
+    MIN(score) AS minimum_score,
+    MAX(score) AS maximum_score
+FROM customers
+WHERE score > 300
+GROUP BY country
+HAVING AVG(score) > 600
+ORDER BY average_score DESC;
+
+
+
+
+
+
+
+
+
+
+
+
+
