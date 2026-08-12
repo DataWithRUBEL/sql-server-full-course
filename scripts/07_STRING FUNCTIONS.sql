@@ -917,3 +917,68 @@ GO
 SELECT *
 FROM dbo.vw_CleanCustomers;
 GO
+
+
+
+
+
+🎯 Functions Covered
+Function	              মূল কাজ	                                  Real Business Use
+CONCAT()	              Text combine	                               Customer name
+TRIM()	              দুই পাশের space remove	                      Data cleaning
+LOWER()	              Lowercase	                                  Email standardization
+UPPER()	              Uppercase	                                  Country/category standardization
+REPLACE()	           Text replace/remove	                      Phone cleaning
+LEN()	                 String length	                            Data quality
+LEFT()	              Left characters	                            Code prefix
+RIGHT()	              Right characters	                         Customer number
+SUBSTRING()	           মাঝের text extract	                         ID/code parsing
+CHARINDEX()	           Position খোঁজা	                            Email parsing
+STRING_SPLIT()	        One → Many rows	                            Skills/tags analysis
+STRING_AGG()	        Many → One string	                         Report aggregation
+CONCAT_WS()	           Separator সহ concatenate	                   Customer address/name
+NULLIF()	              Equal value → NULL	                         Empty string cleaning
+COALESCE()	           First non-NULL	                            Missing data fallback
+PATINDEX()	           Pattern position	                         Data validation
+REVERSE()	           Text reverse	                               String transformation
+TRANSLATE()	           Character mapping	                         Format transformation
+REPLICATE()	           Repeat text	                               Padding/report formatting
+STUFF()	              Replace/insert at position	                String modification
+LTRIM()	              Left spaces remove	                         Legacy cleaning
+RTRIM()	              Right spaces remove	                      Legacy cleaning
+SPACE()	              Blank spaces তৈরি	                         Report formatting
+FORMAT()	              Display formatting	                         Date/number reporting
+
+
+
+
+
+
+   
+⭐ সবচেয়ে গুরুত্বপূর্ণ Best Practice
+🔹 Cleaning: TRIM(), REPLACE(), LOWER(), UPPER(), NULLIF(), COALESCE()
+🔹 Parsing: LEFT(), RIGHT(), SUBSTRING(), CHARINDEX(), PATINDEX()
+🔹 Row transformation: STRING_SPLIT()
+🔹 Aggregation: STRING_AGG()
+🔹 Formatting: CONCAT(), CONCAT_WS(), FORMAT()
+🔹 ETL: Raw data সরাসরি overwrite না করে Silver/Clean layer বা View-এ standardized data তৈরি করা।
+🔹 Performance: FORMAT() presentation/reporting-এর জন্য রাখুন; large-scale ETL transformation-এ সাধারণত CONVERT(), CAST() ইত্যাদি বেশি performant।
+🔹 NULL: NULLIF() দিয়ে empty string normalize করে তারপর COALESCE() দিয়ে fallback দেওয়া একটি খুব practical SQL Server pattern।
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
