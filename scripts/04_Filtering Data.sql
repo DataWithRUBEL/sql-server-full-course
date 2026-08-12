@@ -843,8 +843,6 @@ OR
 
 
 
-
-
 Data Analyst + Data Engineer হিসেবে কোথায় ব্যবহার করবেন?
 Filtering	Real Business Use
 =	নির্দিষ্ট country/status/category
@@ -859,6 +857,619 @@ NOT	Exclusion logic
 BETWEEN	Date/price/score range
 IN	Multiple category/country/status
 LIKE	Customer/product search
+
+
+
+
+
+
+
+-- More practice
+
+1. = — নির্দিষ্ট Value খুঁজতে
+🎯 কেন ব্যবহার করবো?
+যখন একটি নির্দিষ্ট value-এর সাথে exact match করতে চাই।
+💼 Real Business Use
+নির্দিষ্ট Country
+নির্দিষ্ট Order Status
+নির্দিষ্ট Product Category
+নির্দিষ্ট Customer
+নির্দিষ্ট Employee
+Example: Germany-এর Customers
+
+
+
+/* ============================================================
+   = EQUAL
+   Germany-এর customers খুঁজছি
+   ============================================================ */
+
+SELECT
+    CustomerID,
+    FirstName,
+    LastName,
+    Country,
+    Score
+FROM Customers
+WHERE Country = 'Germany';
+
+
+
+
+/* ============================================================
+   = EQUAL
+   শুধুমাত্র Completed orders
+   ============================================================ */
+
+SELECT
+    OrderID,
+    CustomerID,
+    OrderDate,
+    OrderStatus
+FROM Orders
+WHERE OrderStatus = 'Completed';
+
+
+
+
+
+
+2. <> — নির্দিষ্ট Value বাদ দিতে
+🎯 কেন ব্যবহার করবো?
+যখন কোনো নির্দিষ্ট value বাদ দিয়ে বাকি data দেখতে চাই।
+💼 Real Business Use
+Germany বাদ দিতে
+Cancelled orders বাদ দিতে
+একটি category বাদ দিতে
+একটি employee বাদ দিতে
+Example
+
+
+
+
+/* ============================================================
+   <> NOT EQUAL
+   Germany-এর customers বাদ দিচ্ছি
+   ============================================================ */
+
+SELECT
+    CustomerID,
+    FirstName,
+    LastName,
+    Country
+FROM Customers
+WHERE Country <> 'Germany';
+
+
+
+/* ============================================================
+   Cancelled orders বাদ দিচ্ছি
+   ============================================================ */
+
+SELECT
+    OrderID,
+    CustomerID,
+    OrderDate,
+    OrderStatus
+FROM Orders
+WHERE OrderStatus <> 'Cancelled';
+
+
+
+
+
+3. > — Threshold-এর উপরে Data
+🎯 কেন ব্যবহার করবো?
+যখন কোনো value একটি নির্দিষ্ট threshold-এর চেয়ে বেশি কিনা দেখতে চাই।
+💼 Real Business Use
+High-value customers
+Expensive products
+High salary employees
+Large orders
+High sales transactions
+Example: High-Score Customers
+/* ============================================================
+   > GREATER THAN
+   Score 500-এর বেশি customers
+   ============================================================ */
+
+SELECT
+    CustomerID,
+    FirstName,
+    LastName,
+    Score
+FROM Customers
+WHERE Score > 500;
+
+
+
+Product Example
+/* ============================================================
+   Price 100-এর বেশি products
+   ============================================================ */
+
+SELECT
+    ProductID,
+    ProductName,
+    Category,
+    Price
+FROM Products
+WHERE Price > 100;
+👉 মূল কথা: > = Above threshold
+
+
+
+
+4. >= — Minimum Threshold
+🎯 কেন ব্যবহার করবো?
+যখন একটি minimum acceptable value নির্ধারণ করতে চাই এবং threshold-টিও include করতে চাই।
+💼 Real Business Use
+ধরুন:
+VIP Customer = Score 500 বা তার বেশি
+
+তাহলে >= ব্যবহার করবো।
+
+
+/* ============================================================
+   >= GREATER THAN OR EQUAL
+   VIP customers:
+   Score 500 বা তার বেশি
+   ============================================================ */
+
+SELECT
+    CustomerID,
+    FirstName,
+    LastName,
+    Score
+FROM Customers
+WHERE Score >= 500;
+
+
+
+
+
+
+Salary Example
+/* ============================================================
+   Salary 60000 বা তার বেশি employees
+   ============================================================ */
+
+SELECT
+    EmployeeID,
+    FirstName,
+    LastName,
+    JobTitle,
+    Salary
+FROM Employees
+WHERE Salary >= 60000;
+👉 মূল কথা: >= = Minimum threshold সহ।
+
+
+
+
+
+5. < — Threshold-এর নিচের Data
+🎯 কেন ব্যবহার করবো?
+যখন কোনো value নির্দিষ্ট threshold-এর চেয়ে কম এমন data খুঁজতে চাই।
+💼 Real Business Use
+Low-score customers
+Low-price products
+Low-stock products
+Low-value orders
+Example
+/* ============================================================
+   < LESS THAN
+   Score 500-এর কম customers
+   ============================================================ */
+
+SELECT
+    CustomerID,
+    FirstName,
+    LastName,
+    Score
+FROM Customers
+WHERE Score < 500;
+
+
+
+
+Stock Example
+/* ============================================================
+   Stock 100-এর কম products
+   Inventory monitoring
+   ============================================================ */
+
+SELECT
+    ProductID,
+    ProductName,
+    StockQuantity
+FROM Products
+WHERE StockQuantity < 100;
+👉 মূল কথা: < = Below threshold
+
+
+
+
+
+
+6. <= — Maximum Threshold
+🎯 কেন ব্যবহার করবো?
+যখন একটি maximum limit নির্ধারণ করতে চাই এবং সেই limit-টিও include করতে চাই।
+💼 Real Business Use
+যেমন:
+Low-price product = Price 50 বা তার কম
+
+
+/* ============================================================
+   <= LESS THAN OR EQUAL
+   Price 50 বা তার কম products
+   ============================================================ */
+
+SELECT
+    ProductID,
+    ProductName,
+    Category,
+    Price
+FROM Products
+WHERE Price <= 50;
+
+
+
+
+
+
+Salary Example
+/* ============================================================
+   Salary 60000 বা তার কম employees
+   ============================================================ */
+
+SELECT
+    EmployeeID,
+    FirstName,
+    JobTitle,
+    Salary
+FROM Employees
+WHERE Salary <= 60000;
+👉 মূল কথা: <= = Maximum threshold সহ।
+
+
+
+
+
+
+
+7. AND — একাধিক Condition একসাথে
+🎯 কেন ব্যবহার করবো?
+যখন একটি row-কে qualify করতে একাধিক condition একই সাথে TRUE হতে হবে।
+Condition 1 = TRUE
+       AND
+Condition 2 = TRUE
+       ↓
+     Result
+💼 Real Business Use
+ধরুন Business বললো:
+USA-এর এমন customers চাই যাদের score 500-এর বেশি।
+
+
+/* ============================================================
+   AND
+   USA + Score > 500
+   ============================================================ */
+
+SELECT
+    CustomerID,
+    FirstName,
+    LastName,
+    Country,
+    Score
+FROM Customers
+WHERE Country = 'USA'
+  AND Score > 500;
+এখানে:
+USA হতে হবে
+     AND
+Score > 500 হতে হবে
+দুটিই TRUE না হলে customer আসবে না।
+👉 মূল কথা: AND = সব শর্ত পূরণ করতে হবে।
+
+
+
+
+
+
+8. OR — Alternative Conditions
+🎯 কেন ব্যবহার করবো?
+যখন একাধিক alternative condition-এর যেকোনো একটি সত্য হলেই data দরকার।
+💼 Real Business Use
+ধরুন:
+USA অথবা Germany-এর customers চাই।
+
+/* ============================================================
+   OR
+   USA অথবা Germany
+   ============================================================ */
+
+SELECT
+    CustomerID,
+    FirstName,
+    LastName,
+    Country
+FROM Customers
+WHERE Country = 'USA'
+   OR Country = 'Germany';
+এখানে:
+USA
+ OR
+Germany
+যেকোনো একটি match করলেই row আসবে।
+👉 মূল কথা: OR = এইটা অথবা ওইটা।
+
+
+
+
+
+
+
+9. NOT — Exclusion Logic
+🎯 কেন ব্যবহার করবো?
+যখন কোনো condition-এর বিপরীত data দরকার।
+Example
+Score 500-এর কম নয়।
+
+/* ============================================================
+   NOT
+   Score 500-এর কম নয়
+   ============================================================ */
+
+SELECT
+    CustomerID,
+    FirstName,
+    LastName,
+    Score
+FROM Customers
+WHERE NOT Score < 500;
+এর equivalent:
+/* ============================================================
+   একই Logic
+   ============================================================ */
+
+SELECT
+    CustomerID,
+    FirstName,
+    LastName,
+    Score
+FROM Customers
+WHERE Score >= 500;
+আরেকটি বাস্তব Example
+/* ============================================================
+   Cancelled orders বাদ দেওয়া
+   ============================================================ */
+
+SELECT
+    OrderID,
+    CustomerID,
+    OrderStatus
+FROM Orders
+WHERE NOT OrderStatus = 'Cancelled';
+👉 মূল কথা: NOT = condition-এর বিপরীত।
+
+
+
+
+
+
+10. BETWEEN — Range Filtering
+🎯 কেন ব্যবহার করবো?
+যখন data একটি range-এর মধ্যে আছে কিনা দেখতে চাই।
+বিশেষ করে:
+Date
+Price
+Score
+Salary
+Quantity
+Example: Customer Score
+/* ============================================================
+   BETWEEN
+   Score 300 থেকে 600-এর মধ্যে
+   ============================================================ */
+
+SELECT
+    CustomerID,
+    FirstName,
+    LastName,
+    Score
+FROM Customers
+WHERE Score BETWEEN 300 AND 600;
+BETWEEN inclusive:
+300 <= Score <= 600
+অর্থাৎ 300 এবং 600 দুটোই included।
+Product Price
+/* ============================================================
+   Product price 50 থেকে 200
+   ============================================================ */
+
+SELECT
+    ProductID,
+    ProductName,
+    Price
+FROM Products
+WHERE Price BETWEEN 50 AND 200;
+👉 মূল কথা: BETWEEN = একটি range-এর মধ্যে data।
+
+
+
+
+
+
+
+
+11. IN — Multiple Exact Values
+🎯 কেন ব্যবহার করবো?
+যখন একই column-এর জন্য অনেকগুলো নির্দিষ্ট value check করতে হবে।
+❌ এভাবে লিখলে বড় হয়ে যায়
+/* ============================================================
+   OR দিয়ে multiple country
+   ============================================================ */
+
+SELECT *
+FROM Customers
+WHERE Country = 'USA'
+   OR Country = 'Germany'
+   OR Country = 'Canada';
+✅ IN দিয়ে পরিষ্কার
+/* ============================================================
+   IN
+   Multiple countries
+   ============================================================ */
+
+SELECT
+    CustomerID,
+    FirstName,
+    LastName,
+    Country
+FROM Customers
+WHERE Country IN
+(
+    'USA',
+    'Germany',
+    'Canada'
+);
+Product Category
+/* ============================================================
+   Multiple product categories
+   ============================================================ */
+
+SELECT
+    ProductID,
+    ProductName,
+    Category,
+    Price
+FROM Products
+WHERE Category IN
+(
+    'Electronics',
+    'Furniture'
+);
+👉 মূল কথা: IN = একাধিক exact value-এর মধ্যে match।
+
+
+
+
+
+
+12. LIKE — Pattern Search 🔎
+🎯 কেন ব্যবহার করবো?
+যখন exact value জানা নেই, কিন্তু কোনো pattern জানা আছে।
+বিশেষ করে:
+Customer search
+Product search
+Employee search
+Name search
+Email search
+M% — Starts With
+/* ============================================================
+   LIKE
+   FirstName M দিয়ে শুরু
+   ============================================================ */
+
+SELECT
+    CustomerID,
+    FirstName,
+    LastName
+FROM Customers
+WHERE FirstName LIKE 'M%';
+M%
+↓
+M দিয়ে শুরু
+তারপর যেকোনো character
+%n — Ends With
+/* ============================================================
+   LIKE
+   FirstName n দিয়ে শেষ
+   ============================================================ */
+
+SELECT
+    CustomerID,
+    FirstName,
+    LastName
+FROM Customers
+WHERE FirstName LIKE '%n';
+%r% — Contains
+/* ============================================================
+   LIKE
+   FirstName-এর যেকোনো জায়গায় r
+   ============================================================ */
+
+SELECT
+    CustomerID,
+    FirstName,
+    LastName
+FROM Customers
+WHERE FirstName LIKE '%r%';
+__r% — Third Character
+/* ============================================================
+   LIKE
+   Third character = r
+   ============================================================ */
+
+SELECT
+    CustomerID,
+    FirstName,
+    LastName
+FROM Customers
+WHERE FirstName LIKE '__r%';
+Pattern:
+_   _   r   %
+↓   ↓   ↓   ↓
+1   2   3   4+
+👉 মূল কথা: LIKE = exact value নয়, pattern খোঁজা।
+
+
+
+
+
+
+13. সবগুলো এক নজরে 🎯
+Operator	     সহজ অর্থ	           কেন ব্যবহার করবো?	         Real Example
+=	             Equal	               Exact value	                 Germany customers
+<>	             Not Equal	           Value বাদ দিতে	             Germany বাদ
+>	             Greater	           Threshold-এর উপরে	         Score > 500
+>=	             Greater/Equal	       Minimum limit	             Score ≥ 500
+<	             Less	               Threshold-এর নিচে	         Price < 50
+<=	             Less/Equal	           Maximum limit	             Price ≤ 50
+AND	             সব শর্ত	               Multiple conditions	         USA + Score > 500
+OR	             যেকোনো একটি	       Alternative conditions	     USA অথবা Germany
+NOT	             বিপরীত	               Exclusion	                 Cancelled বাদ
+BETWEEN	         Range	               সীমার মধ্যে	                 Price 50–200
+IN	             Multiple values	   অনেক exact value	         USA/Germany/Canada
+LIKE	         Pattern	           Search	                     Name starts with M
+
+
+
+
+14. সবচেয়ে গুরুত্বপূর্ণ Real Business Query 🔥
+বাস্তবে একটি query-তে একাধিক filtering একসাথে থাকবে।
+ধরুন Management বললো:
+USA অথবা Germany-এর customers, যাদের score 500 বা তার বেশি।
+
+/* ============================================================
+   REAL BUSINESS FILTER
+   USA অথবা Germany
+   AND Score 500 বা তার বেশি
+   ============================================================ */
+
+SELECT
+    CustomerID,
+    FirstName,
+    LastName,
+    Country,
+    Score
+FROM Customers
+WHERE Country IN ('USA', 'Germany')
+  AND Score >= 500;
+এখানে আমরা একসাথে ব্যবহার করেছি:
+
+
 
 
 
