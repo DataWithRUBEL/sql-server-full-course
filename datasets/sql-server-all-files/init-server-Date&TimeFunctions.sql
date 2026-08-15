@@ -2,10 +2,10 @@
    DATABASE
    ============================================================ */
 
-CREATE DATABASE Date&TimeFunctions;
+CREATE DATABASE SalesDateTimeDemo;
 GO
 
-USE Date&TimeFunctions;
+USE SalesDateTimeDemo;
 GO
 
 
