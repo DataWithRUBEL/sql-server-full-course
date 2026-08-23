@@ -147,17 +147,30 @@ GO
 -- ============================================================
 
 INSERT INTO source_system.Customers
+(
+    CustomerID,
+    CustomerCode,
+    FirstName,
+    LastName,
+    Email,
+    Phone,
+    Country,
+    City,
+    CustomerType,
+    CreatedDate,
+    ModifiedDate
+)
 VALUES
 (1,'C001','John','Smith','john.smith@gmail.com','5551001','USA','New York','Retail','2025-01-10','2026-01-10'),
 (2,'C002','Sarah','Johnson','sarah.johnson@gmail.com','5551002','USA','Chicago','Retail','2025-02-15','2026-02-20'),
-(3,'David','Brown','david.brown@gmail.com','5551003','UK','London','Corporate','2025-03-01','2026-03-05'),
-(4,'Emily','Davis','emily.davis@gmail.com','5551004','Canada','Toronto','Retail','2025-03-20','2026-03-20'),
-(5,'Michael','Wilson','michael.wilson@gmail.com','5551005','Australia','Sydney','Retail','2025-04-10','2026-04-15'),
-(6,'Olivia','Taylor','olivia.taylor@gmail.com','5551006','USA','Boston','VIP','2025-05-01','2026-05-05'),
-(7,'Daniel','Anderson','daniel.anderson@gmail.com','5551007','Germany','Berlin','Retail','2025-05-20','2026-05-25'),
-(8,'Sophia','Thomas','sophia.thomas@gmail.com','5551008','France','Paris','VIP','2025-06-10','2026-06-12'),
-(9,'James','Jackson','james.jackson@gmail.com','5551009','USA','Dallas','Retail','2025-07-01','2026-07-05'),
-(10,'Emma','White','emma.white@gmail.com','5551010','UK','Manchester','Corporate','2025-07-15','2026-07-20');
+(3,'C003','David','Brown','david.brown@gmail.com','5551003','UK','London','Corporate','2025-03-01','2026-03-05'),
+(4,'C004','Emily','Davis','emily.davis@gmail.com','5551004','Canada','Toronto','Retail','2025-03-20','2026-03-20'),
+(5,'C005','Michael','Wilson','michael.wilson@gmail.com','5551005','Australia','Sydney','Retail','2025-04-10','2026-04-15'),
+(6,'C006','Olivia','Taylor','olivia.taylor@gmail.com','5551006','USA','Boston','VIP','2025-05-01','2026-05-05'),
+(7,'C007','Daniel','Anderson','daniel.anderson@gmail.com','5551007','Germany','Berlin','Retail','2025-05-20','2026-05-25'),
+(8,'C008','Sophia','Thomas','sophia.thomas@gmail.com','5551008','France','Paris','VIP','2025-06-10','2026-06-12'),
+(9,'C009','James','Jackson','james.jackson@gmail.com','5551009','USA','Dallas','Retail','2025-07-01','2026-07-05'),
+(10,'C010','Emma','White','emma.white@gmail.com','5551010','UK','Manchester','Corporate','2025-07-15','2026-07-20');
 GO
 
 
