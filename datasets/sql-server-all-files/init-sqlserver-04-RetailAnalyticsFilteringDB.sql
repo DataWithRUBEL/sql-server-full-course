@@ -1,12 +1,12 @@
 /* ============================================================
    DATABASE
-   RetailAnalytics2026
+   RetailAnalyticsFilteringDB
    ============================================================ */
 
-CREATE DATABASE RetailAnalytics2026;
+CREATE DATABASE RetailAnalyticsFilteringDB;
 GO
 
-USE RetailAnalytics2026;
+USE RetailAnalyticsFilteringDB;
 GO
 
 
