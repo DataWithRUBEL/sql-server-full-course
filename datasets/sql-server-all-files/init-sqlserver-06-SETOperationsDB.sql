@@ -1,12 +1,12 @@
 /* ==============================================================================
-   DATABASE: SQLSetDB
+   DATABASE: SETOperationsDB
    PURPOSE : SQL SET OPERATIONS PRACTICE
    ============================================================================== */
 
-CREATE DATABASE SQLSetDB;
+CREATE DATABASE SETOperationsDB;
 GO
 
-USE SQLSetDB;
+USE SETOperationsDB;
 GO
 
 
