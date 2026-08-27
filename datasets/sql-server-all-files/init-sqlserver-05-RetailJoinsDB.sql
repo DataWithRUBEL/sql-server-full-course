@@ -1,14 +1,13 @@
 /* ================================================================
    PROJECT : Retail Operations Analytics
-   DATABASE: RetailOperationsDB
+   DATABASE: RetailJoinsDB
 ================================================================ */
 
-CREATE DATABASE RetailOperationsDB;
+CREATE DATABASE RetailJoinsDB;
 GO
 
-USE RetailOperationsDB;
+USE RetailJoinsDB;
 GO
-
 
 
 
@@ -302,20 +301,4 @@ VALUES
 (5009, '2026-02-20', 102, 203, 301, 1, 120.00),
 (5010, '2026-02-25', 999, 201, 303, 1, 750.00);
 GO
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
