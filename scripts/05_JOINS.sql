@@ -1023,6 +1023,228 @@ LEFT JOIN Customers AS c
 
 
 
+More Practice
+1️⃣ INNER JOIN — Matching Data
+🎯 কাজ
+শুধু যেসব Customer-এর Order আছে, তাদের দেখাবে।
+/* ================================================================
+   INNER JOIN
+   Customer + Orders
+   শুধু matching data দেখাবে
+================================================================ */
+
+SELECT
+    c.CustomerID,
+    c.FirstName,
+    c.LastName,
+    o.OrderID,
+    o.Sales
+FROM Customers AS c
+INNER JOIN Orders AS o
+    ON c.CustomerID = o.CustomerID;
+
+সহজভাবে
+Customers        Orders
+   101     ←→      101   ✅
+   102     ←→      102   ✅
+   103     ←→      103   ✅
+   107             নেই   ❌
+
+   
+CustomerID = 107 দেখাবে না।
+কারণ তার কোনো Order নেই।
+💼 Business Example
+"যেসব customer purchase করেছে তাদের sales দেখাও।"
+
+
+
+
+2️⃣ LEFT JOIN — Left-এর সব Data
+🎯 কাজ
+Customers-এর সবাইকে দেখাবে।
+Order থাকলে Order information দেখাবে।
+Order না থাকলে NULL দেখাবে।
+/* ================================================================
+   LEFT JOIN
+   সব Customer দেখাবে
+   Order থাকলে Order দেখাবে
+   Order না থাকলে NULL
+================================================================ */
+SELECT
+    c.CustomerID,
+    c.FirstName,
+    c.LastName,
+    o.OrderID,
+    o.Sales
+FROM Customers AS c
+LEFT JOIN Orders AS o
+    ON c.CustomerID = o.CustomerID;
+
+
+এখানে গুরুত্বপূর্ণ
+Customer 101 → Order আছে → Sales আছে
+Customer 102 → Order আছে → Sales আছে
+Customer 107 → Order নেই  → NULL
+💼 Business Example
+"আমাদের সব customer দেখাও এবং তারা purchase করেছে কিনা দেখাও।"
+
+এটি customer analysis-এ খুব common।
+
+
+
+
+
+
+3️⃣ RIGHT JOIN — Right-এর সব Data
+🎯 কাজ
+Orders-এর সব record দেখাবে।
+Customer matching থাকলে customer information দেখাবে।
+/* ================================================================
+   RIGHT JOIN
+   সব Order দেখাবে
+   Customer না থাকলেও Order দেখাবে
+================================================================ */
+SELECT
+    c.CustomerID,
+    c.FirstName,
+    c.LastName,
+    o.OrderID,
+    o.CustomerID AS OrderCustomerID,
+    o.Sales
+FROM Customers AS c
+RIGHT JOIN Orders AS o
+    ON c.CustomerID = o.CustomerID;
+
+
+আমাদের data-তে:
+Order 5001 → Customer 101 → Match ✅
+
+Order 5010 → Customer 999 → No Match ❌
+   
+তাই 5010 থাকবে।
+কিন্তু Customer information হবে:
+   
+CustomerID = NULL
+FirstName  = NULL
+LastName   = NULL
+💼 Business Example
+"আমাদের সব order দেখাও, এমনকি customer master-এ customer না থাকলেও।"
+
+এটি Data Quality check-এর জন্য useful।
+
+
+
+
+
+
+4️⃣ FULL JOIN — দুই পাশের সব Data
+🎯 কাজ
+Customers-এর সব data + Orders-এর সব data।
+/* ================================================================
+   FULL JOIN
+   Customer-এর সব record
+   +
+   Order-এর সব record
+
+   Matching হলে একসাথে
+   Matching না হলে NULL
+================================================================ */
+SELECT
+    c.CustomerID,
+    c.FirstName,
+    c.LastName,
+    o.OrderID,
+    o.CustomerID AS OrderCustomerID,
+    o.Sales
+FROM Customers AS c
+FULL JOIN Orders AS o
+    ON c.CustomerID = o.CustomerID;
+
+
+এখানে:
+Customer 101 + Order 5001 → Match
+
+Customer 107 + NULL       → Customer-এর Order নেই
+
+NULL + Order 5010         → Order-এর Customer নেই
+💼 Business Example
+"Customer master এবং Orders-এর মধ্যে কোন data missing বা unmatched আছে?"
+
+এটি Data Reconciliation-এ খুব useful।
+
+
+
+
+
+
+5️⃣ LEFT ANTI JOIN — Left-এর Unmatched
+SQL Server-এ LEFT ANTI JOIN নামে আলাদা keyword নেই।
+আমরা:
+LEFT JOIN
++
+WHERE RightTable.Key IS NULL
+ব্যবহার করি।
+🎯 Customer যাদের কোনো Order নেই
+/* ================================================================
+   LEFT ANTI JOIN
+   যেসব Customer কোনো Order করেনি
+================================================================ */
+SELECT
+    c.CustomerID,
+    c.FirstName,
+    c.LastName
+FROM Customers AS c
+LEFT JOIN Orders AS o
+    ON c.CustomerID = o.CustomerID
+WHERE o.CustomerID IS NULL;
+
+
+Result
+107 | Nadia | Islam
+কারণ Nadia-এর কোনো order নেই।
+   
+💼 Business Example
+"কোন customer এখনো purchase করেনি?"
+এটা customer activation / marketing analysis-এ useful।
+
+
+
+
+
+
+6️⃣ RIGHT ANTI JOIN — Right-এর Unmatched
+এবার খুঁজব:
+কোন Order-এর Customer master-এ customer নেই?
+
+/* ================================================================
+   RIGHT ANTI JOIN
+   যেসব Order-এর matching Customer নেই
+================================================================ */
+SELECT
+    o.OrderID,
+    o.CustomerID,
+    o.Sales
+FROM Customers AS c
+RIGHT JOIN Orders AS o
+    ON c.CustomerID = o.CustomerID
+WHERE c.CustomerID IS NULL;
+
+
+Result
+5010 | 999 | 750.00
+কারণ:
+Orders.CustomerID = 999
+             ↓
+Customers.CustomerID = 999 নেই
+💼 Data Engineering Example
+এটি একটি orphan transaction।
+Order
+  ↓
+Customer Master
+  ↓
+Match নেই
+  ↓
+Data Quality Issue ⚠️
 
 
 
@@ -1030,6 +1252,313 @@ LEFT JOIN Customers AS c
 
 
 
+7️⃣ FULL ANTI JOIN — দুই পাশের Unmatched
+🎯 কাজ
+দুই পাশের unmatched data খুঁজব:
+Customer without Order
+        +
+Order without Customer
+/* ================================================================
+   FULL ANTI JOIN
+   দুই পাশের unmatched records
+================================================================ */
+SELECT
+    c.CustomerID,
+    c.FirstName,
+    o.OrderID,
+    o.CustomerID AS OrderCustomerID,
+    o.Sales
+FROM Customers AS c
+FULL JOIN Orders AS o
+    ON c.CustomerID = o.CustomerID
+WHERE c.CustomerID IS NULL
+   OR o.CustomerID IS NULL;
 
 
+এখানে পাব:
+Customer 107 → কোনো Order নেই
+
+Order 5010 → Customer 999 নেই
+💼 Business Example
+"Customer master এবং transaction table-এর সব mismatch বের করো।"
+
+এটি ETL/Data Warehouse validation-এ খুব useful।
+
+
+
+
+
+
+8️⃣ CROSS JOIN — Every Combination
+🎯 কাজ
+প্রত্যেক Customer-এর সাথে প্রত্যেক Product-এর combination তৈরি করবে।
+এখানে Orders ব্যবহার না করে Customers + Products ব্যবহার করলে business example আরও পরিষ্কার।
+/* ================================================================
+   CROSS JOIN
+   প্রত্যেক Customer-এর সাথে প্রত্যেক Product-এর combination
+================================================================ */
+SELECT
+    c.CustomerID,
+    c.FirstName,
+    p.ProductID,
+    p.ProductName,
+    p.Price
+FROM Customers AS c
+CROSS JOIN Products AS p;
+
+
+আমাদের data:
+7 Customers
+×
+6 Products
+=
+42 Rows
+💼 Business Example
+ধরুন:
+"প্রত্যেক customer-কে প্রত্যেক product-এর জন্য sales offer তৈরি করতে হবে।"
+
+তাহলে:
+Customer
+   +
+Product
+   ↓
+Possible Combination
+⚠️ সাবধান
+CROSS JOIN খুব দ্রুত huge dataset তৈরি করতে পারে।
+
+
+
+
+
+
+9️⃣ Multiple JOIN — Multiple Tables Combine
+এখন আসল Business Reporting।
+একটি Order-এর সাথে:
+Orders
+  ↓
+Customers
+  ↓
+Products
+  ↓
+Employees
+সব combine করব।
+/* ================================================================
+   MULTIPLE JOIN
+   Orders + Customers + Products + Employees
+
+   Business Question:
+   প্রতিটি Order কে করেছে,
+   কোন Customer করেছে,
+   কোন Product কিনেছে,
+   এবং কোন Salesperson sale করেছে?
+================================================================ */
+SELECT
+    o.OrderID,
+    o.OrderDate,
+
+    c.CustomerID,
+    CONCAT(c.FirstName, ' ', c.LastName) AS CustomerName,
+
+    p.ProductID,
+    p.ProductName,
+    p.Price,
+
+    o.Quantity,
+    o.Sales,
+
+    e.EmployeeID,
+    CONCAT(e.FirstName, ' ', e.LastName) AS SalesPersonName
+
+FROM Orders AS o
+
+LEFT JOIN Customers AS c
+    ON o.CustomerID = c.CustomerID
+
+LEFT JOIN Products AS p
+    ON o.ProductID = p.ProductID
+
+LEFT JOIN Employees AS e
+    ON o.SalesPersonID = e.EmployeeID;
+
+
+
+🧠 এখানে কী হচ্ছে?
+                 Customers
+                     ↑
+                     │
+Orders ──────────────┼──────── Products
+  │                  │
+  │                  │
+  └────────────── Employees
+   
+একটি Order থেকে আমরা পাচ্ছি:
+Order ID
+Customer
+Product
+Quantity
+Sales
+Salesperson
+💼 Real Business Question
+"কোন customer কোন product কিনেছে, কত quantity কিনেছে, 
+কত sales হয়েছে এবং কোন salesperson sale করেছে?"
+
+এটাই বাস্তব-world business reporting query।
+
+
+
+
+
+
+🔟 আরও Real — 7 Tables একসাথে
+এবার আমাদের তৈরি করা সব related tables ব্যবহার করি।
+/* ================================================================
+   COMPLETE BUSINESS REPORT
+   Orders
+   + Customers
+   + Countries
+   + Products
+   + Categories
+   + Employees
+   + Departments
+================================================================ */
+SELECT
+    o.OrderID,
+    o.OrderDate,
+
+    CONCAT(c.FirstName, ' ', c.LastName) AS CustomerName,
+    co.CountryName,
+
+    p.ProductName,
+    ca.CategoryName,
+    p.Price,
+
+    o.Quantity,
+    o.Sales,
+
+    CONCAT(e.FirstName, ' ', e.LastName) AS SalesPersonName,
+    d.DepartmentName
+
+FROM Orders AS o
+
+LEFT JOIN Customers AS c
+    ON o.CustomerID = c.CustomerID
+
+LEFT JOIN Countries AS co
+    ON c.CountryID = co.CountryID
+
+LEFT JOIN Products AS p
+    ON o.ProductID = p.ProductID
+
+LEFT JOIN Categories AS ca
+    ON p.CategoryID = ca.CategoryID
+
+LEFT JOIN Employees AS e
+    ON o.SalesPersonID = e.EmployeeID
+
+LEFT JOIN Departments AS d
+    ON e.DepartmentID = d.DepartmentID;
+
+
+এখন একটি raw order:
+5001 | 101 | 201 | 301 | 750
+   
+এর business meaning বের হয়ে যাবে:
+Order 5001
+   ↓
+Ahmed Hassan
+   ↓
+Kuwait
+   ↓
+Laptop
+   ↓
+Electronics
+   ↓
+Quantity = 1
+   ↓
+Sales = 750
+   ↓
+John Smith
+   ↓
+Sales Department
+
+
+
+
+
+
+🧠 JOIN মনে রাখার সবচেয়ে সহজ Formula
+INNER JOIN
+↓
+শুধু Match
+
+LEFT JOIN
+↓
+Left-এর সব
+
+RIGHT JOIN
+↓
+Right-এর সব
+
+FULL JOIN
+↓
+দুই পাশের সব
+
+LEFT ANTI
+↓
+Left আছে
+Right নেই
+
+RIGHT ANTI
+↓
+Right আছে
+Left নেই
+
+FULL ANTI
+↓
+দুই পাশের যেগুলোর Match নেই
+
+CROSS JOIN
+↓
+সব Possible Combination
+
+MULTIPLE JOIN
+↓
+অনেক Table → একটি Business Result
+
+
+
+
+
+
+-- সবগুলো টেবিলকে সঠিক ক্রমানুসারে যুক্ত করে সম্পূর্ণ রিপোর্ট বের করার SQL স্ট্রাকচার:
+SELECT 
+    -- ১. অর্ডার তথ্য
+    o.order_id,
+    o.order_date,
+    o.quantity,
+    
+    -- ২. প্রোডাক্ট ও ক্যাটাগরি তথ্য
+    p.product_name,
+    cat.category_name,
+    
+    -- ৩. কাস্টমার ও কান্ট্রি তথ্য
+    c.customer_name,
+    cn.country_name,
+    
+    -- ৪. এমপ্লয়ি ও ডিপার্টমেন্ট তথ্য
+    e.employee_name,
+    d.department_name
+
+FROM Orders o
+-- প্রোডাক্ট ও ক্যাটাগরি কানেকশন
+LEFT JOIN Products p ON o.product_id = p.product_id
+LEFT JOIN Categories cat ON p.category_id = cat.category_id
+
+-- কাস্টমার ও কান্ট্রি কানেকশন
+LEFT JOIN Customers c ON o.customer_id = c.customer_id
+LEFT JOIN Countries cn ON c.country_id = cn.country_id
+
+-- এমপ্লয়ি ও ডিপার্টমেন্ট কানেকশন
+LEFT JOIN Employees e ON o.employee_id = e.employee_id
+LEFT JOIN Departments d ON e.department_id = d.department_id;
 
