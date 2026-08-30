@@ -1,427 +1,476 @@
-1. GETDATE() — Current Server Date & Time
-  
-কী?
-GETDATE() SQL Server server-এর current local date/time দেয়।
-/* ============================================================
-   TASK 1
-   Current server date and time
-   ============================================================ */
-
-SELECT
-    GETDATE() AS CurrentDateTime;
-
-
-Real Business Use
-SELECT
-    OrderID,
-    CreationTime,
-    '2025-08-20' AS HardCodedDate,
-    GETDATE() AS Today
-FROM Sales.Orders;
-
-
-📌 Use case:  
-ETL execution timestamp
-Last refresh time
-Audit columns
-Current reporting date
-
-
-
-
-
-2. Date Values
-Date এবং timestamp আলাদা করে বুঝতে হবে।
-Data Type	Example
-DATE	2025-08-20
-DATETIME2	2025-08-20 14:30:25
-DATETIMEOFFSET	2025-08-20 14:30:25 +03:00
-
-
-SELECT
-    OrderID,
-    OrderDate,
-    CreationTime,
-    ShipDate
-FROM Sales.Orders;
-
-
-
-
-
-
-
-
-3. DATETRUNC()
-DATETRUNC() একটি date/time value-কে নির্দিষ্ট period-এর শুরুতে নিয়ে আসে।
-SQL Server 2022+
-
--- Year
-SELECT
-    OrderID,
-    CreationTime,
-    DATETRUNC(year, CreationTime) AS YearStart
-FROM Sales.Orders;
-
-2025-08-20 16:25:30
-  
-হবে:
-2025-01-01 00:00:00
-
-  
--- Month
-SELECT
-    OrderID,
-    CreationTime,
-    DATETRUNC(month, CreationTime) AS MonthStart
-FROM Sales.Orders;
-
-
--- Day
-SELECT
-    OrderID,
-    CreationTime,
-    DATETRUNC(day, CreationTime) AS DayStart
-FROM Sales.Orders;
-
-
--- Minute
-SELECT
-    OrderID,
-    CreationTime,
-    DATETRUNC(minute, CreationTime) AS MinuteStart
-FROM Sales.Orders;
-
-
-
-
-
-
-
-4. Date Part Extraction
-DATENAME()
-Date part-এর text name দেয়।
-  
-SELECT
-    OrderID,
-    CreationTime,
-
-    DATENAME(month, CreationTime) AS MonthName,
-    DATENAME(weekday, CreationTime) AS WeekdayName,
-    DATENAME(day, CreationTime) AS DayName,
-    DATENAME(year, CreationTime) AS YearName
-FROM Sales.Orders;
-
-
-Example:
-August
-Thursday
-20
-2025
-
-
-
-
-
-
-
-
-5. DATEPART()
-Numeric date part বের করে।
-
-  
-SELECT
-    OrderID,
-    CreationTime,
-
-    DATEPART(year, CreationTime) AS OrderYear,
-    DATEPART(month, CreationTime) AS OrderMonth,
-    DATEPART(day, CreationTime) AS OrderDay,
-    DATEPART(hour, CreationTime) AS OrderHour,
-    DATEPART(quarter, CreationTime) AS OrderQuarter,
-    DATEPART(week, CreationTime) AS OrderWeek
-FROM Sales.Orders;
-
-
-
-
-
-
-
-6. YEAR(), MONTH(), DAY()
-সবচেয়ে সহজ date extraction।
-
-  
-SELECT
-    OrderID,
-    OrderDate,
-
-    YEAR(OrderDate) AS OrderYear,
-    MONTH(OrderDate) AS OrderMonth,
-    DAY(OrderDate) AS OrderDay
-FROM Sales.Orders;
-
-
-কখন কোনটা?
-Function	           Result
-YEAR()	             2025
-MONTH()	             8
-DAY()	               20
-DATEPART()	         বিভিন্ন date part
-DATENAME()	         Text name
-
-
-
-
-
-
-
-
-7. DATETRUNC() দিয়ে Aggregation
--- Year-wise orders:
-/* ============================================================
-   YEAR-WISE ORDER COUNT
-   ============================================================ */
-
-SELECT
-    DATETRUNC(year, CreationTime) AS OrderYear,
-    COUNT(*) AS OrderCount
-FROM Sales.Orders
-GROUP BY
-    DATETRUNC(year, CreationTime);
-
-
-
--- Month-wise:
-SELECT
-    DATETRUNC(month, CreationTime) AS OrderMonth,
-    COUNT(*) AS OrderCount
-FROM Sales.Orders
-GROUP BY
-    DATETRUNC(month, CreationTime);
-
-Data Engineer Use
-ETL partition বা monthly aggregation-এর জন্য DATETRUNC() খুব useful।
-
-
-
-
-
-
-
-8. EOMONTH()
-একটি date-এর শেষ দিন বের করে।
-  
-SELECT
-    OrderID,
-    OrderDate,
-    EOMONTH(OrderDate) AS EndOfMonth
-FROM Sales.Orders;
-
-Example:
-2025-02-14 → 2025-02-28
-2025-08-20 → 2025-08-31
-
-
-
-
-
-
-
-9. Date Parts — Business Analysis
-  
--- Year-wise Orders
-SELECT
-    YEAR(OrderDate) AS OrderYear,
-    COUNT(*) AS TotalOrders
-FROM Sales.Orders
-GROUP BY YEAR(OrderDate);
-
-
--- Month-wise Orders
-SELECT
-    MONTH(OrderDate) AS OrderMonth,
-    COUNT(*) AS TotalOrders
-FROM Sales.Orders
-GROUP BY MONTH(OrderDate);
-
-
--- Month Name
-SELECT
-    DATENAME(month, OrderDate) AS OrderMonth,
-    COUNT(*) AS TotalOrders
-FROM Sales.Orders
-GROUP BY DATENAME(month, OrderDate);
-
-
-⚠️ Best Practice: শুধু month name দিয়ে grouping করলে January 2025 এবং January 2026 একসাথে চলে আসবে।
-  
-ভালো:
-SELECT
-    YEAR(OrderDate) AS OrderYear,
-    MONTH(OrderDate) AS OrderMonth,
-    COUNT(*) AS TotalOrders
-FROM Sales.Orders
-GROUP BY
-    YEAR(OrderDate),
-    MONTH(OrderDate);
-
-
-
-
-
-
-
-10. February Orders
-/* ============================================================
-   FEBRUARY ORDERS
-   ============================================================ */
-
+1. আমরা একটি Retail & E-Commerce Company ধরে নিচ্ছি।
+আমাদের data model:
+dt.Departments
+      │
+      └── dt.Employees
+              │
+              ├── dt.EmployeeAttendance
+              │
+              └── dt.Orders
+                       │
+                       └── dt.OrderItems
+                                │
+                                └── dt.Products
+
+dt.Customers
+      │
+      └── dt.Orders
+
+dt.SystemEvents
+এতে আমরা বাস্তব কাজের মতো প্রশ্ন করতে পারব:
+- কোন মাসে সবচেয়ে বেশি sales?
+- Employee কত বছর ধরে কাজ করছে?
+- Order delivery কতদিন নিয়েছে?
+- Last 30 days-এর orders?
+- Month-end sales?
+- UTC থেকে Kuwait time?
+- বিভিন্ন timezone-এর order time?
+- Invalid date validation?
+- NULL date handling?
+- Daily/monthly aggregation?
+- Incremental ETL watermark?
+
+
+
+
+2. Verify All Data
+-- =========================================================
+-- Verify the tables and sample records
+-- =========================================================
+
+SELECT * FROM dt.Departments;
+SELECT * FROM dt.Employees;
+SELECT * FROM dt.Customers;
+SELECT * FROM dt.Products;
+SELECT * FROM dt.Orders;
+SELECT * FROM dt.OrderItems;
+SELECT * FROM dt.EmployeeAttendance;
+SELECT * FROM dt.SystemEvents;
+GO
+
+
+
+
+-- Date/Time Data Types 🕒  
+3. DATE
+শুধু date দরকার হলে DATE।
+Syntax
+-- =========================================================
+-- DATE stores date only
+-- Format: YYYY-MM-DD
+-- =========================================================
+DECLARE @MyDate DATE = '2026-08-29';
+
+SELECT @MyDate AS MyDate;
+
+
+ব্যবহার
+-- =========================================================
+-- Find orders placed on a specific business date
+-- =========================================================
 SELECT *
-FROM Sales.Orders
-WHERE MONTH(OrderDate) = 2;
+FROM dt.Orders
+WHERE OrderDate = '2026-08-10';
 
-⚠️ Production reporting-এ বড় table হলে date range filtering সাধারণত বেশি ভালো।
+Best Practice
+- Business date হলে DATE
+- BirthDate → DATE
+- HireDate → DATE
+- Holiday → DATE
 
 
 
 
 
 
+4. TIME
+শুধু সময় দরকার হলে।
+-- =========================================================
+-- TIME stores time without date
+-- =========================================================
+DECLARE @CurrentTime TIME(0) = '14:30:00';
 
-11. FORMAT()
-Date-কে presentation-friendly text বানাতে ব্যবহার করা যায়।
-  
+SELECT @CurrentTime AS CurrentTime;
+
+
+Real Example
+-- =========================================================
+-- Find orders placed during business hours
+-- =========================================================
 SELECT
     OrderID,
-    CreationTime,
-
-    FORMAT(CreationTime, 'MM-dd-yyyy') AS USA_Format,
-    FORMAT(CreationTime, 'dd-MM-yyyy') AS EURO_Format,
-    FORMAT(CreationTime, 'dd') AS DayNumber,
-    FORMAT(CreationTime, 'ddd') AS ShortDay,
-    FORMAT(CreationTime, 'dddd') AS FullDay,
-    FORMAT(CreationTime, 'MM') AS MonthNumber,
-    FORMAT(CreationTime, 'MMM') AS ShortMonth,
-    FORMAT(CreationTime, 'MMMM') AS FullMonth
-FROM Sales.Orders;
-
-Example:
-08-20-2025
-20-08-2025
-Wed
-Wednesday
-Aug
-August
+    OrderTime
+FROM dt.Orders
+WHERE OrderTime >= '09:00:00'
+  AND OrderTime <  '18:00:00';
 
 
 
-  
-Custom Format
-SELECT
-    OrderID,
-    CreationTime,
 
-    'Day '
-    + FORMAT(CreationTime, 'ddd MMM')
-    + ' Q'
-    + DATENAME(quarter, CreationTime)
-    + ' '
-    + FORMAT(CreationTime, 'yyyy hh:mm:ss tt')
-    AS CustomFormat
+5. DATETIME
+পুরনো/common date + time type।
+-- =========================================================
+-- DATETIME stores date and time
+-- Precision is lower than DATETIME2
+-- =========================================================
+DECLARE @LegacyDateTime DATETIME =
+    '2026-08-29 14:30:15';
 
-FROM Sales.Orders;
+
+SELECT @LegacyDateTime;
+
 
 ⚠️ Best Practice
-FORMAT() presentation-এর জন্য ভালো, কিন্তু বড় dataset-এ heavy query transformation-এর জন্য FORMAT() avoid করা ভালো।
+নতুন system-এ সাধারণত:
+DATETIME2 > DATETIME
+ব্যবহার করা ভালো।
 
 
 
 
 
 
+6. DATETIME2
+SQL Server-এ high precision date/time-এর জন্য সাধারণত preferred।
+-- =========================================================
+-- DATETIME2 supports higher precision
+-- =========================================================
+DECLARE @PreciseDateTime DATETIME2(7) =
+    '2026-08-29 14:30:15.1234567';
+
+SELECT @PreciseDateTime;
 
 
-12. CONVERT()
-Data type conversion-এর জন্য খুব গুরুত্বপূর্ণ।
-  
+কেন?
+- বেশি precision
+- ANSI-friendly
+- DATETIME-এর চেয়ে flexible
+- নতুন application/database-এর জন্য preferred
+
+
+
+
+
+
+7. SMALLDATETIME
+কম precision-এর পুরনো type।
+-- =========================================================
+-- SMALLDATETIME stores date and time
+-- Seconds are not preserved
+-- =========================================================
+DECLARE @SmallDateTime SMALLDATETIME =
+    '2026-08-29 14:30:45';
+
+
+SELECT @SmallDateTime;
+
+⚠️ SMALLDATETIME সাধারণত নতুন design-এ avoid করা ভালো 
+যদি minute-level legacy compatibility প্রয়োজন না হয়।
+
+
+
+
+
+
+8. DATETIMEOFFSET
+Date + time + timezone offset।
+-- =========================================================
+-- DATETIMEOFFSET stores date/time with timezone offset
+-- =========================================================
+DECLARE @OffsetTime DATETIMEOFFSET =
+    '2026-08-29 14:30:15 +03:00';
+
+SELECT @OffsetTime;
+
+Real-world
+2026-08-29 14:30:15 +03:00
+                         ↑
+                    UTC offset
+Multi-country application-এ অত্যন্ত useful।
+
+
+
+
+
+
+-- Current Date/Time Functions 🕐
+9. GETDATE()
+বর্তমান server local date/time।
+Syntax
+-- =========================================================
+-- GETDATE returns current server local date/time
+-- =========================================================
+SELECT GETDATE() AS CurrentServerDateTime;
+
+
+
+
+
+
+10. CURRENT_TIMESTAMP
+GETDATE()-এর ANSI SQL equivalent।
+-- =========================================================
+-- CURRENT_TIMESTAMP returns current server date/time
+-- Function-style syntax is not required
+-- =========================================================
+SELECT CURRENT_TIMESTAMP AS CurrentDateTime;
+
+
+Compare
+-- =========================================================
+-- Compare GETDATE and CURRENT_TIMESTAMP
+-- =========================================================
 SELECT
-    CONVERT(INT, '123') AS StringToInt,
-    CONVERT(DATE, '2025-08-20') AS StringToDate,
-
-    CreationTime,
-
-    CONVERT(DATE, CreationTime) AS DateOnly,
-
-    CONVERT(VARCHAR, CreationTime, 32) AS Style32,
-    CONVERT(VARCHAR, CreationTime, 34) AS Style34
-FROM Sales.Orders;
-
-Data Engineering Use
-Raw CSV/JSON/API data থেকে date conversion করার সময় খুব common।
+    GETDATE() AS GETDATE_Value,
+    CURRENT_TIMESTAMP AS CURRENT_TIMESTAMP_Value;
 
 
 
 
 
 
-13. CAST()
-CAST() type conversion-এর standard syntax।
+11. GETUTCDATE()
+UTC current time।
+-- =========================================================
+-- GETUTCDATE returns current UTC date/time
+-- =========================================================
+SELECT GETUTCDATE() AS CurrentUTCDateTime;
 
+
+
+
+
+12. SYSDATETIME()
+Higher precision local server time।
+-- =========================================================
+-- SYSDATETIME returns high precision local server time
+-- =========================================================
+SELECT SYSDATETIME() AS CurrentSystemDateTime;
+
+
+
+
+
+
+
+13. SYSUTCDATETIME()
+High precision UTC।
+-- =========================================================
+-- SYSUTCDATETIME returns high precision UTC date/time
+-- =========================================================
+SELECT SYSUTCDATETIME() AS CurrentUTCDateTime;
+
+
+
+
+
+
+
+14. SYSDATETIMEOFFSET()
+Local server date/time + offset।
+-- =========================================================
+-- SYSDATETIMEOFFSET returns current date/time with offset
+-- =========================================================
+SELECT SYSDATETIMEOFFSET() AS CurrentDateTimeWithOffset;
+
+
+
+
+
+
+15. Practical Comparison
   
-SELECT
-    CAST('123' AS INT) AS StringToInt,
-
-    CAST(123 AS VARCHAR(20)) AS IntToString,
-
-    CAST('2025-08-20' AS DATE) AS StringToDate,
-
-    CAST('2025-08-20' AS DATETIME2) AS StringToDatetime,
-
-    CreationTime,
-
-    CAST(CreationTime AS DATE) AS DateOnly
-FROM Sales.Orders;
+Function	             Local/UTC	        Precision	        Offset
+GETDATE()	             Local	            Lower	            ❌
+CURRENT_TIMESTAMP	     Local	            Lower	            ❌
+GETUTCDATE()	         UTC	              Lower	            ❌
+SYSDATETIME()	         Local	            High	            ❌
+SYSUTCDATETIME()	     UTC	              High	            ❌
+SYSDATETIMEOFFSET()	   Local	            High	            ✅
 
 
-CAST বনাম CONVERT
-  
-বিষয়	                 CAST	                 CONVERT
-Standard SQL	         ✅	                   ❌
-SQL Server specific	   ❌	                   ✅
-Style code	           ❌	                   ✅
-Readability	           ⭐⭐⭐⭐⭐	         ⭐⭐⭐⭐
-SQL Server ETL	       ⭐⭐⭐⭐⭐	         ⭐⭐⭐⭐⭐
+
+
+
+16. Data Engineering Best Practice
+ETL/audit systems-এ অনেক ক্ষেত্রে:
+-- =========================================================
+-- Preferred high-precision UTC audit timestamp
+-- =========================================================
+SELECT SYSUTCDATETIME() AS ETL_LoadTimeUTC;
 
 
 
 
 
 
-
-14. DATEADD()
-একটি date-এর সাথে date interval যোগ/বিয়োগ করে।
-  
+-- Date Part Extraction 📅
+17. YEAR()
+-- =========================================================
+-- Extract year from order date
+-- =========================================================
 SELECT
     OrderID,
     OrderDate,
-
-    DATEADD(day, -10, OrderDate) AS TenDaysBefore,
-
-    DATEADD(month, 3, OrderDate) AS ThreeMonthsLater,
-
-    DATEADD(year, 2, OrderDate) AS TwoYearsLater
-FROM Sales.Orders;
+    YEAR(OrderDate) AS OrderYear
+FROM dt.Orders;
 
 
-Real Business Example
-Expected delivery date:
-  
+
+
+
+18. MONTH()
+-- =========================================================
+-- Extract month number from order date
+-- =========================================================
+SELECT
+    OrderID,
+    MONTH(OrderDate) AS OrderMonth
+FROM dt.Orders;
+
+
+
+
+
+19. DAY()
+-- =========================================================
+-- Extract day number from order date
+-- =========================================================
+SELECT
+    OrderID,
+    DAY(OrderDate) AS OrderDay
+FROM dt.Orders;
+
+
+
+
+
+
+20. DATEPART()
+একটি date-এর নির্দিষ্ট অংশ numeric হিসেবে বের করে।
+Syntax
+-- =========================================================
+-- DATEPART syntax
+-- =========================================================
+
+DATEPART(datepart, date)
+Example
+-- =========================================================
+-- Extract multiple date parts
+-- =========================================================
 SELECT
     OrderID,
     OrderDate,
-    DATEADD(day, 3, OrderDate) AS ExpectedDeliveryDate
-FROM Sales.Orders;
+    DATEPART(YEAR, OrderDate) AS OrderYear,
+    DATEPART(MONTH, OrderDate) AS OrderMonth,
+    DATEPART(DAY, OrderDate) AS OrderDay,
+    DATEPART(QUARTER, OrderDate) AS OrderQuarter,
+    DATEPART(WEEK, OrderDate) AS OrderWeek,
+    DATEPART(WEEKDAY, OrderDate) AS OrderWeekDay
+FROM dt.Orders;
+
+
+
+Useful dateparts
+YEAR
+QUARTER
+MONTH
+DAY
+WEEK
+WEEKDAY
+HOUR
+MINUTE
+SECOND
+MILLISECOND
+MICROSECOND
+NANOSECOND
+
+
+
+
+
+21. DATENAME()
+Date part-এর name return করে।
+Syntax
+-- =========================================================
+-- DATENAME syntax
+-- =========================================================
+
+DATENAME(datepart, date)
+Example
+-- =========================================================
+-- Get month and weekday names
+-- =========================================================
+SELECT
+    OrderID,
+    OrderDate,
+    DATENAME(MONTH, OrderDate) AS MonthName,
+    DATENAME(WEEKDAY, OrderDate) AS WeekdayName
+FROM dt.Orders;
+
+DATEPART vs DATENAME
+Function	               Result
+DATEPART(MONTH, date)	   8
+DATENAME(MONTH, date)	   August
+
+
+
+
+-- Date Calculation 🔢
+22. DATEADD()
+Date-এর সাথে interval যোগ/বিয়োগ করে।
+Syntax
+-- =========================================================
+-- DATEADD syntax
+-- =========================================================
+
+DATEADD(datepart, number, date)
+30 days later
+-- =========================================================
+-- Calculate expected date 30 days after order
+-- =========================================================
+SELECT
+    OrderID,
+    OrderDate,
+    DATEADD(DAY, 30, OrderDate) AS DateAfter30Days
+FROM dt.Orders;
+
+
+
+7 days before
+-- =========================================================
+-- Calculate date seven days before order
+-- =========================================================
+SELECT
+    OrderID,
+    OrderDate,
+    DATEADD(DAY, -7, OrderDate) AS SevenDaysBefore
+FROM dt.Orders;
+
+
+
+Add month
+-- =========================================================
+-- Calculate one month after order
+-- =========================================================
+SELECT
+    OrderID,
+    OrderDate,
+    DATEADD(MONTH, 1, OrderDate) AS NextMonthDate
+FROM dt.Orders;
+
+
+
+Data Engineering Example
+Incremental ETL window:
+-- =========================================================
+-- Calculate ETL extraction window
+-- =========================================================
+DECLARE @ETLStartDate DATE = '2026-08-01';
+
+SELECT
+    @ETLStartDate AS StartDate,
+    DATEADD(DAY, 1, @ETLStartDate) AS NextDate;
 
 
 
@@ -429,675 +478,1370 @@ FROM Sales.Orders;
 
 
 
-15. DATEDIFF()
-দুই date-এর মধ্যে difference বের করে।
-Shipping Duration
-  
+23. DATEDIFF()
+দুই date-এর boundary difference গণনা করে।
+Syntax
+-- =========================================================
+-- DATEDIFF syntax
+-- =========================================================
+
+DATEDIFF(datepart, startdate, enddate)
+Delivery days
+-- =========================================================
+-- Calculate delivery duration in days
+-- =========================================================
 SELECT
     OrderID,
     OrderDate,
     ShipDate,
+    DATEDIFF(DAY, OrderDate, ShipDate) AS DaysToShip
+FROM dt.Orders;
 
-    DATEDIFF(day, OrderDate, ShipDate) AS ShippingDays
-FROM Sales.Orders;
 
 
-Average Shipping Days  
+Employee tenure
+-- =========================================================
+-- Calculate employee tenure in years
+-- =========================================================
 SELECT
-    MONTH(OrderDate) AS OrderMonth,
-
-    AVG(
-        DATEDIFF(day, OrderDate, ShipDate)
-    ) AS AvgShippingDays
-
-FROM Sales.Orders
-GROUP BY MONTH(OrderDate);
+    EmployeeID,
+    EmployeeName,
+    HireDate,
+    DATEDIFF(YEAR, HireDate, GETDATE()) AS ApproxYears
+FROM dt.Employees;
 
 
 
+⚠️ এখানে একটি গুরুত্বপূর্ণ বিষয়:
+DATEDIFF(YEAR, ...) exact completed years নয়; এটি year boundary count করে।
+Exact birthday/anniversary logic-এর জন্য additional logic দরকার।
 
 
 
 
 
-16. Employee Age
+
+24. DATEDIFF_BIG()
+DATEDIFF()-এর মতো, কিন্তু বড় BIGINT result দেয়।
+Syntax
+-- =========================================================
+-- DATEDIFF_BIG syntax
+-- =========================================================
+
+DATEDIFF_BIG(datepart, startdate, enddate)
+High precision example
+-- =========================================================
+-- Calculate microseconds between two timestamps
+-- BIGINT is useful for very large intervals
+-- =========================================================
+SELECT
+    DATEDIFF_BIG(
+        MICROSECOND,
+        '2000-01-01 00:00:00',
+        '2026-08-29 00:00:00'
+    ) AS TotalMicroseconds;
+
+
+কোথায় useful?
+- Large event logs
+- Telemetry
+- IoT
+- Big time intervals
+- High precision ETL/event processing
+
+
+
+
+
+-- Date Boundary Functions 📆
+25. EOMONTH()
+একটি month-এর শেষ দিন return করে।
+Syntax
+-- =========================================================
+-- EOMONTH syntax
+-- =========================================================
+
+EOMONTH(start_date [, month_to_add])
+Example
+-- =========================================================
+-- Find month-end for each order
+-- =========================================================
+SELECT
+    OrderID,
+    OrderDate,
+    EOMONTH(OrderDate) AS MonthEnd
+FROM dt.Orders;
+
+
+
+Next month-end
+-- =========================================================
+-- Find end of next month
+-- =========================================================
+SELECT
+    OrderID,
+    OrderDate,
+    EOMONTH(OrderDate, 1) AS NextMonthEnd
+FROM dt.Orders;
+
+
+
+Month-start
+EOMONTH() সরাসরি month-start দেয় না।
+-- =========================================================
+-- Calculate first day of the order month
+-- =========================================================
+SELECT
+    OrderID,
+    OrderDate,
+    DATEADD(
+        DAY,
+        1,
+        EOMONTH(OrderDate, -1)
+    ) AS MonthStart
+FROM dt.Orders;
+
+
+
+
+
+26. DATETRUNC()
+একটি date/time-এর নির্দিষ্ট অংশ truncate করে।
+SQL Server 2022+
+Syntax
+-- =========================================================
+-- DATETRUNC syntax
+-- =========================================================
+
+DATETRUNC(datepart, date)
+Month
+-- =========================================================
+-- Truncate order date to month
+-- Returns first moment of the month
+-- =========================================================
+SELECT
+    OrderID,
+    OrderDateTime,
+    DATETRUNC(MONTH, OrderDateTime) AS MonthStart
+FROM dt.Orders;
+
+
+Day
+-- =========================================================
+-- Truncate timestamp to day
+-- =========================================================
+SELECT
+    OrderID,
+    OrderDateTime,
+    DATETRUNC(DAY, OrderDateTime) AS DayStart
+FROM dt.Orders;
+
+
+Year
+-- =========================================================
+-- Truncate timestamp to year
+-- =========================================================
+SELECT
+    OrderID,
+    OrderDateTime,
+    DATETRUNC(YEAR, OrderDateTime) AS YearStart
+FROM dt.Orders;
+
+
+Week
+-- =========================================================
+-- Truncate timestamp to week
+-- =========================================================
+SELECT
+    OrderID,
+    OrderDateTime,
+    DATETRUNC(WEEK, OrderDateTime) AS WeekStart
+FROM dt.Orders;
+
+
+
+
+
+27. EOMONTH vs DATETRUNC
   
+Function	             Purpose
+EOMONTH()	             Month-এর শেষ দিন
+DATETRUNC(MONTH,...)	 Month-এর শুরু
+DATETRUNC(YEAR,...)	   Year-এর শুরু
+DATETRUNC(DAY,...)	   Day-এর শুরু
+
+
+
+
+  
+
+-- Date/Time Construction 🏗️
+28. DATEFROMPARTS()
+Syntax
+-- =========================================================
+-- DATEFROMPARTS syntax
+-- =========================================================
+
+DATEFROMPARTS(year, month, day)
+Example
+-- =========================================================
+-- Construct a date from year/month/day
+-- =========================================================
+SELECT
+    DATEFROMPARTS(2026, 8, 29) AS ConstructedDate;
+
+
+Real Data Example
+-- =========================================================
+-- Build a business date from separate date columns
+-- =========================================================
+SELECT
+    DATEFROMPARTS(2026, 8, 29) AS BusinessDate;
+
+
+
+
+
+
+29. TIMEFROMPARTS()
+Syntax
+-- =========================================================
+-- TIMEFROMPARTS syntax
+-- =========================================================
+
+TIMEFROMPARTS(
+    hour,
+    minute,
+    seconds,
+    fractions,
+    precision
+)
+
+  
+Example
+-- =========================================================
+-- Construct high precision time
+-- =========================================================
+SELECT
+    TIMEFROMPARTS(
+        14,
+        30,
+        15,
+        1234567,
+        7
+    ) AS ConstructedTime;
+
+
+
+
+
+
+30. DATETIMEFROMPARTS()
+Syntax
+-- =========================================================
+-- DATETIMEFROMPARTS syntax
+-- =========================================================
+DATETIMEFROMPARTS(
+    year,
+    month,
+    day,
+    hour,
+    minute,
+    seconds,
+    milliseconds
+)
+
+  
+Example
+-- =========================================================
+-- Construct DATETIME value
+-- =========================================================
+SELECT
+    DATETIMEFROMPARTS(
+        2026,
+        8,
+        29,
+        14,
+        30,
+        15,
+        123
+    ) AS ConstructedDateTime;
+
+
+
+
+
+
+
+31. DATETIME2FROMPARTS()
+Syntax
+-- =========================================================
+-- DATETIME2FROMPARTS syntax
+-- =========================================================
+DATETIME2FROMPARTS(
+    year,
+    month,
+    day,
+    hour,
+    minute,
+    seconds,
+    fractions,
+    precision
+)
+
+  
+Example
+-- =========================================================
+-- Construct high precision DATETIME2
+-- =========================================================
+SELECT
+    DATETIME2FROMPARTS(
+        2026,
+        8,
+        29,
+        14,
+        30,
+        15,
+        1234567,
+        7
+    ) AS ConstructedDateTime2;
+
+
+
+
+
+
+
+
+32. DATETIMEOFFSETFROMPARTS()
+Timezone-aware timestamp তৈরি করতে।
+Syntax
+-- =========================================================
+-- DATETIMEOFFSETFROMPARTS syntax
+-- =========================================================
+DATETIMEOFFSETFROMPARTS(
+    year,
+    month,
+    day,
+    hour,
+    minute,
+    seconds,
+    fractions,
+    hour_offset,
+    minute_offset,
+    precision
+)
+
+
+  
+Example
+-- =========================================================
+-- Construct timestamp with Kuwait UTC+03:00 offset
+-- =========================================================
+SELECT
+    DATETIMEOFFSETFROMPARTS(
+        2026,
+        8,
+        29,
+        14,
+        30,
+        15,
+        1234567,
+        3,
+        0,
+        7
+    ) AS KuwaitTimestamp;
+
+
+
+
+
+
+33. SMALLDATETIMEFROMPARTS()
+Syntax
+-- =========================================================
+-- SMALLDATETIMEFROMPARTS syntax
+-- =========================================================
+SMALLDATETIMEFROMPARTS(
+    year,
+    month,
+    day,
+    hour,
+    minute
+)
+
+  
+Example
+-- =========================================================
+-- Construct SMALLDATETIME
+-- =========================================================
+SELECT
+    SMALLDATETIMEFROMPARTS(
+        2026,
+        8,
+        29,
+        14,
+        30
+    ) AS ConstructedSmallDateTime;
+
+
+
+
+
+
+-- Conversion 🔄
+34. CAST()
+এক data type থেকে অন্য data type-এ convert করে।
+Syntax
+-- =========================================================
+-- CAST syntax
+-- =========================================================
+
+CAST(expression AS data_type)
+DATETIME → DATE
+-- =========================================================
+-- Convert timestamp into date only
+-- =========================================================
+SELECT
+    OrderID,
+    OrderDateTime,
+    CAST(OrderDateTime AS DATE) AS OrderDateOnly
+FROM dt.Orders;
+
+
+
+DATETIME2 → TIME
+-- =========================================================
+-- Extract time using CAST
+-- =========================================================
+SELECT
+    OrderID,
+    OrderDateTime,
+    CAST(OrderDateTime AS TIME) AS OrderTimeOnly
+FROM dt.Orders;
+
+
+
+
+
+
+35. CONVERT()
+CAST()-এর মতো conversion করে এবং style parameter support করে।
+Syntax
+-- =========================================================
+-- CONVERT syntax
+-- =========================================================
+CONVERT(data_type, expression [, style])
+
+
+
+Date formatting
+-- =========================================================
+-- Convert date to different string representations
+-- Style 23 = YYYY-MM-DD
+-- =========================================================
+SELECT
+    OrderID,
+    CONVERT(VARCHAR(10), OrderDate, 23) AS ISODate
+FROM dt.Orders;
+
+
+Style example
+-- =========================================================
+-- Convert date into common formats
+-- =========================================================
+SELECT
+    OrderDate,
+    CONVERT(VARCHAR(10), OrderDate, 23) AS ISO_Format,
+    CONVERT(VARCHAR(10), OrderDate, 103) AS British_Format,
+    CONVERT(VARCHAR(10), OrderDate, 101) AS US_Format
+FROM dt.Orders;
+
+
+
+
+
+
+36. TRY_CAST()
+Invalid conversion হলে error না দিয়ে NULL return করে।
+Syntax
+-- =========================================================
+-- TRY_CAST syntax
+-- =========================================================
+
+TRY_CAST(expression AS data_type)
+Example
+-- =========================================================
+-- Test safe date conversion
+-- Invalid date becomes NULL instead of an error
+-- =========================================================
+SELECT
+    TRY_CAST('2026-08-29' AS DATE) AS ValidDate,
+    TRY_CAST('ABC' AS DATE) AS InvalidDate;
+
+
+
+ETL Example ⭐
+-- =========================================================
+-- Safely convert staging data
+-- Bad records become NULL for later data-quality handling
+-- =========================================================
+SELECT
+    TRY_CAST('2026-08-29' AS DATE) AS CleanDate,
+    TRY_CAST('NotARealDate' AS DATE) AS BadDate;
+
+
+
+
+
+37. TRY_CONVERT()
+CONVERT()-এর safe version।
+Syntax
+-- =========================================================
+-- TRY_CONVERT syntax
+-- =========================================================
+TRY_CONVERT(data_type, expression [, style])
+
+
+  
+Example
+-- =========================================================
+-- Safely convert string into DATE
+-- =========================================================
+SELECT
+    TRY_CONVERT(DATE, '2026-08-29', 23) AS ValidDate,
+    TRY_CONVERT(DATE, 'ABC', 23) AS InvalidDate;
+
+
+CAST vs CONVERT vs TRY_CAST vs TRY_CONVERT
+  
+Function	      Error on bad data	         Style
+CAST()	        ✅	                       ❌
+CONVERT()	      ✅	                       ✅
+TRY_CAST()	    ❌ → NULL	               ❌
+TRY_CONVERT()	  ❌ → NULL	               ✅
+
+
+ETL Best Practice
+Raw/staging data clean করার সময়:
+TRY_CAST / TRY_CONVERT
+        ↓
+Data Quality Check
+        ↓
+Silver
+
+
+
+
+
+
+-- ISDATE() 🔍
+38. ISDATE()
+কোন expression valid datetime value হিসেবে interpret করা যায় কি না তা check করে।
+Syntax
+-- =========================================================
+-- ISDATE syntax
+-- =========================================================
+ISDATE(expression)
+
+  
+Example
+-- =========================================================
+-- Validate possible date values
+-- =========================================================
+SELECT
+    ISDATE('2026-08-29') AS ValidDate,
+    ISDATE('2026-02-31') AS InvalidDate,
+    ISDATE('ABC') AS InvalidText;
+
+
+Data Quality Example
+-- =========================================================
+-- Identify rows containing invalid date text
+-- =========================================================
+DECLARE @RawDate VARCHAR(50) = '2026-08-29';
+
+SELECT
+    @RawDate AS RawValue,
+    ISDATE(@RawDate) AS IsValidDate;
+
+
+⚠️ Important
+Modern ETL validation-এ শুধু ISDATE()-এর ওপর নির্ভর না করে:
+-- =========================================================
+-- Preferred modern safe-conversion validation pattern
+-- =========================================================
+SELECT
+    TRY_CONVERT(DATE, '2026-08-29', 23) AS ParsedDate;
+ব্যবহার করা বেশি practical।
+
+
+
+
+
+
+-- Time Zone 🌍
+39. AT TIME ZONE
+এটি SQL Server-এর সবচেয়ে গুরুত্বপূর্ণ timezone functionality-এর একটি।
+Syntax
+-- =========================================================
+-- AT TIME ZONE syntax
+-- =========================================================
+inputdate AT TIME ZONE timezone
+
+
+  
+Kuwait time
+-- =========================================================
+-- Convert a datetime value into Kuwait local timezone
+-- Kuwait timezone uses Arabian Standard Time
+-- =========================================================
+SELECT
+    OrderDateTime,
+    OrderDateTime AT TIME ZONE 'Arabian Standard Time'
+        AS KuwaitDateTime
+FROM dt.Orders;
+
+
+
+UTC → Kuwait
+-- =========================================================
+-- Convert UTC timestamp into Kuwait local time
+-- =========================================================
+SELECT
+    EventTimeUTC,
+    EventTimeUTC AT TIME ZONE 'UTC'
+                  AT TIME ZONE 'Arabian Standard Time'
+        AS KuwaitTime
+FROM dt.SystemEvents;
+
+
+
+UTC → US Eastern
+-- =========================================================
+-- Convert UTC timestamp into US Eastern time
+-- SQL Server timezone rules handle daylight-saving changes
+-- =========================================================
+SELECT
+    EventTimeUTC,
+    EventTimeUTC AT TIME ZONE 'UTC'
+                  AT TIME ZONE 'Eastern Standard Time'
+        AS EasternTime
+FROM dt.SystemEvents;
+
+
+
+
+
+40. SWITCHOFFSET()
+DATETIMEOFFSET-এর offset change করে।
+Syntax
+-- =========================================================
+-- SWITCHOFFSET syntax
+-- =========================================================
+SWITCHOFFSET(datetimeoffset_expression, timezoneoffset_expression)
+
+  
+Example
+-- =========================================================
+-- Change timestamp offset to UTC
+-- The actual instant remains the same
+-- =========================================================
+SELECT
+    OrderID,
+    OrderDateTimeOffset,
+    SWITCHOFFSET(
+        OrderDateTimeOffset,
+        '+00:00'
+    ) AS UTCDateTime
+FROM dt.Orders;
+
+
+
+Kuwait offset
+-- =========================================================
+-- Change displayed offset to Kuwait UTC+03:00
+-- =========================================================
+SELECT
+    OrderID,
+    SWITCHOFFSET(
+        OrderDateTimeOffset,
+        '+03:00'
+    ) AS KuwaitTime
+FROM dt.Orders;
+
+
+Key concept
+SWITCHOFFSET() মূলত:
+Same instant
+     ↓
+Different offset representation
+
+
+
+
+
+
+41. TODATETIMEOFFSET()
+একটি datetime2/date-time value-কে specified offset দিয়ে datetimeoffset বানায়।
+Syntax
+-- =========================================================
+-- TODATETIMEOFFSET syntax
+-- =========================================================
+TODATETIMEOFFSET(expression, timezoneoffset_expression)
+
+  
+Example
+-- =========================================================
+-- Attach Kuwait UTC+03:00 offset to a datetime2 value
+-- =========================================================
+SELECT
+    OrderDateTime,
+    TODATETIMEOFFSET(
+        OrderDateTime,
+        '+03:00'
+    ) AS KuwaitDateTimeOffset
+FROM dt.Orders;
+
+
+AT TIME ZONE vs TODATETIMEOFFSET
+  
+Function	         Main purpose
+AT TIME ZONE	     Timezone rules/name ব্যবহার
+SWITCHOFFSET	     Existing offset change
+TODATETIMEOFFSET	 Date/time-এর সাথে offset attach
+
+
+
+
+
+
+-- NULL & Logic 🧠
+42. ISNULL()
+NULL-এর জায়গায় replacement value।
+Syntax
+-- =========================================================
+-- ISNULL syntax
+-- =========================================================
+ISNULL(expression, replacement_value)
+
+  
+Real Example
+আমাদের Order 5007 এখনো delivered হয়নি।
+-- =========================================================
+-- Replace NULL delivery timestamp with a readable status
+-- =========================================================
+SELECT
+    OrderID,
+    ISNULL(
+        CONVERT(VARCHAR(30), DeliveryDateTime, 120),
+        'Not Delivered'
+    ) AS DeliveryStatus
+FROM dt.Orders;
+
+
+
+
+
+
+
+43. COALESCE()
+একাধিক expression থেকে প্রথম non-NULL value নেয়।
+Syntax
+-- =========================================================
+-- COALESCE syntax
+-- =========================================================
+COALESCE(expression1, expression2, expression3, ...)
+
+  
+Example
+-- =========================================================
+-- Use the first available date
+-- DeliveryDateTime → ShipDate → OrderDate
+-- =========================================================
+SELECT
+    OrderID,
+    COALESCE(
+        DeliveryDateTime,
+        CAST(ShipDate AS DATETIME2),
+        CAST(OrderDate AS DATETIME2)
+    ) AS BestAvailableDate
+FROM dt.Orders;
+
+
+ISNULL vs COALESCE
+  
+Feature	           ISNULL	                COALESCE
+Arguments	          2	                    2+
+Standard	          SQL Server specific	  ANSI SQL
+Simple replacement	⭐⭐⭐⭐⭐	        ⭐⭐⭐⭐
+Multiple fallback	   ❌	                ✅
+
+
+
+
+
+
+44. NULLIF()
+দুই expression equal হলে NULL return করে।
+Syntax
+-- =========================================================
+-- NULLIF syntax
+-- =========================================================
+NULLIF(expression1, expression2)
+
+  
+Division by zero protection
+-- =========================================================
+-- NULLIF prevents division-by-zero errors
+-- =========================================================
+SELECT
+    100.0 / NULLIF(0, 0) AS SafeDivision;
+
+Result:
+NULL
+
+
+  
+Real Data Example
+-- =========================================================
+-- Safely calculate average unit price
+-- NULLIF protects against zero quantity
+-- =========================================================
+SELECT
+    OrderID,
+    SUM(Quantity * UnitPrice) AS TotalSales,
+    SUM(Quantity) AS TotalQuantity,
+
+    SUM(Quantity * UnitPrice)
+        / NULLIF(SUM(Quantity), 0) AS AverageUnitPrice
+FROM dt.OrderItems
+GROUP BY OrderID;
+
+
+
+
+
+
+
+45. CASE
+Business logic তৈরি করার জন্য অত্যন্ত গুরুত্বপূর্ণ।
+Syntax
+-- =========================================================
+-- CASE syntax
+-- =========================================================
+CASE
+    WHEN condition THEN result
+    WHEN condition THEN result
+    ELSE result
+END
+
+
+  
+Delivery status
+-- =========================================================
+-- Classify orders based on delivery status
+-- =========================================================
+SELECT
+    OrderID,
+    OrderDate,
+    DeliveryDateTime,
+
+    CASE
+        WHEN DeliveryDateTime IS NULL
+            THEN 'Pending'
+
+        WHEN DATEDIFF(
+                DAY,
+                OrderDate,
+                CAST(DeliveryDateTime AS DATE)
+             ) <= 3
+            THEN 'Fast Delivery'
+
+        ELSE 'Delayed'
+    END AS DeliveryStatus
+FROM dt.Orders;
+
+
+
+
+
+
+
+
+46. Real Business Analysis 📊
+এখন আমরা সব functions একসাথে ব্যবহার করব।
+
+Monthly Sales Analysis
+-- =========================================================
+-- Monthly sales analysis
+-- DATETRUNC groups orders by month
+-- =========================================================
+SELECT
+    DATETRUNC(MONTH, o.OrderDate) AS MonthStart,
+    COUNT(DISTINCT o.OrderID) AS TotalOrders,
+    SUM(oi.Quantity) AS TotalQuantity,
+    SUM(oi.Quantity * oi.UnitPrice) AS TotalSales
+FROM dt.Orders AS o
+INNER JOIN dt.OrderItems AS oi
+    ON o.OrderID = oi.OrderID
+GROUP BY
+    DATETRUNC(MONTH, o.OrderDate)
+ORDER BY
+    MonthStart;
+
+
+
+
+
+
+47. Year + Quarter + Month Analysis
+-- =========================================================
+-- Business calendar analysis
+-- Extract year, quarter and month
+-- =========================================================
+SELECT
+    YEAR(o.OrderDate) AS OrderYear,
+    DATEPART(QUARTER, o.OrderDate) AS OrderQuarter,
+    MONTH(o.OrderDate) AS OrderMonth,
+    DATENAME(MONTH, o.OrderDate) AS MonthName,
+
+    COUNT(DISTINCT o.OrderID) AS Orders,
+    SUM(oi.Quantity * oi.UnitPrice) AS Sales
+FROM dt.Orders AS o
+INNER JOIN dt.OrderItems AS oi
+    ON o.OrderID = oi.OrderID
+GROUP BY
+    YEAR(o.OrderDate),
+    DATEPART(QUARTER, o.OrderDate),
+    MONTH(o.OrderDate),
+    DATENAME(MONTH, o.OrderDate)
+ORDER BY
+    OrderYear,
+    OrderMonth;
+
+
+
+
+
+
+
+
+48. Month-End Reporting
+-- =========================================================
+-- Month-end sales reporting
+-- EOMONTH identifies the reporting month end
+-- =========================================================
+SELECT
+    EOMONTH(o.OrderDate) AS MonthEnd,
+    SUM(oi.Quantity * oi.UnitPrice) AS TotalSales
+FROM dt.Orders AS o
+INNER JOIN dt.OrderItems AS oi
+    ON o.OrderID = oi.OrderID
+GROUP BY
+    EOMONTH(o.OrderDate)
+ORDER BY
+    MonthEnd;
+
+
+
+
+
+
+49. Order Delivery Duration
+-- =========================================================
+-- Calculate order-to-delivery duration
+-- NULL delivery dates are handled separately
+-- =========================================================
+SELECT
+    OrderID,
+    OrderDate,
+    DeliveryDateTime,
+
+    CASE
+        WHEN DeliveryDateTime IS NULL
+            THEN 'Pending'
+
+        ELSE
+            CAST(
+                DATEDIFF(
+                    DAY,
+                    OrderDate,
+                    CAST(DeliveryDateTime AS DATE)
+                )
+                AS VARCHAR(10)
+            ) + ' Days'
+    END AS DeliveryDuration
+FROM dt.Orders;
+
+
+
+
+
+
+50. Employee Working Hours
+-- =========================================================
+-- Calculate employee working duration
+-- DATEDIFF_BIG gives large integer precision
+-- =========================================================
+SELECT
+    AttendanceID,
+    EmployeeID,
+    AttendanceDate,
+    CheckInTime,
+    CheckOutTime,
+
+    CASE
+        WHEN CheckOutTime IS NULL
+            THEN 'Still Working'
+
+        ELSE
+            CAST(
+                DATEDIFF(
+                    MINUTE,
+                    CheckInTime,
+                    CheckOutTime
+                ) / 60.0
+                AS DECIMAL(10,2)
+            )
+    END AS WorkingHours
+FROM dt.EmployeeAttendance;
+
+
+
+
+
+
+51. Orders During Business Hours
+-- =========================================================
+-- Identify orders placed during business hours
+-- Demonstrates TIME conversion
+-- =========================================================
+SELECT
+    OrderID,
+    OrderDateTime,
+
+    CASE
+        WHEN CAST(OrderDateTime AS TIME) >= '09:00:00'
+         AND CAST(OrderDateTime AS TIME) < '18:00:00'
+            THEN 'Business Hours'
+
+        ELSE 'Outside Business Hours'
+    END AS TimeCategory
+FROM dt.Orders;
+
+
+
+
+
+
+52. Weekend vs Weekday
+-- =========================================================
+-- Classify orders as weekday/weekend
+-- DATENAME returns weekday name
+-- =========================================================
+
+SELECT
+    OrderID,
+    OrderDate,
+    DATENAME(WEEKDAY, OrderDate) AS WeekdayName,
+
+    CASE
+        WHEN DATENAME(WEEKDAY, OrderDate)
+             IN ('Saturday', 'Sunday')
+            THEN 'Weekend'
+
+        ELSE 'Weekday'
+    END AS DayType
+FROM dt.Orders;
+⚠️ এখানে LANGUAGE/server language-এর কারণে weekday names পরিবর্তিত হতে পারে। 
+Production logic-এ DATEPART(WEEKDAY)-এর ওপর নির্ভর করার সময় DATEFIRST setting বিবেচনা করতে হবে।
+
+
+
+
+
+
+53. Current Month Orders
+-- =========================================================
+-- Find orders from the current month
+-- Uses DATETRUNC for a clean date boundary
+-- =========================================================
+SELECT *
+FROM dt.Orders
+WHERE OrderDate >= DATETRUNC(
+        MONTH,
+        CAST(GETDATE() AS DATE)
+      )
+  AND OrderDate < DATEADD(
+        MONTH,
+        1,
+        DATETRUNC(
+            MONTH,
+            CAST(GETDATE() AS DATE)
+        )
+      );
+
+⭐ SARGable pattern
+এটি ভালো কারণ column-এর ওপর function না দিয়ে boundary calculation করা হয়েছে।
+
+
+
+
+
+
+54. Last 30 Days
+-- =========================================================
+-- Find records from the last 30 days
+-- Useful for operational reporting
+-- =========================================================
+SELECT *
+FROM dt.Orders
+WHERE OrderDate >= DATEADD(
+        DAY,
+        -30,
+        CAST(GETDATE() AS DATE)
+      );
+
+
+
+
+
+55. Employee Tenure
+-- =========================================================
+-- Employee tenure analysis
+-- Calculate years and months since joining
+-- =========================================================
+SELECT
+    EmployeeID,
+    EmployeeName,
+    HireDate,
+
+    DATEDIFF(
+        YEAR,
+        HireDate,
+        CAST(GETDATE() AS DATE)
+    ) AS YearBoundaryCount,
+
+    DATEDIFF(
+        MONTH,
+        HireDate,
+        CAST(GETDATE() AS DATE)
+    ) AS MonthBoundaryCount
+
+FROM dt.Employees;
+
+
+
+
+
+
+56. Employee Age Analysis
+-- =========================================================
+-- Calculate approximate age using year difference
+-- =========================================================
 SELECT
     EmployeeID,
     EmployeeName,
     BirthDate,
 
     DATEDIFF(
-        year,
+        YEAR,
         BirthDate,
-        GETDATE()
+        CAST(GETDATE() AS DATE)
     ) AS ApproxAge
-FROM Sales.Employees;
 
-⚠️ এটি birthday হয়েছে কিনা account করে না। Exact age calculation দরকার হলে business logic অনুযায়ী date comparison করতে হবে।
+FROM dt.Employees;
 
-
-
+⚠️ Exact age চাইলে birthday already occurred কি না check করতে হবে।
 
 
 
 
-17. Order-to-Order Time Gap
-এখানে LAG() supporting window function হিসেবে ব্যবহার হচ্ছে।
-/* ============================================================
-   TIME GAP ANALYSIS
-   ============================================================ */
+
+-- Data Engineering Examples ⚙️
+57. Incremental ETL Watermark
+Data Engineering-এ খুব common pattern।
+-- =========================================================
+-- Define ETL watermark
+-- We only want records after the previous successful load
+-- =========================================================
+DECLARE @LastLoadTime DATETIME2(7)
+    = '2026-08-20 00:00:00.0000000';
 
 SELECT
     OrderID,
-    OrderDate AS CurrentOrderDate,
+    OrderDateTime,
+    CustomerID,
+    EmployeeID
+FROM dt.Orders
+WHERE OrderDateTime > @LastLoadTime;
 
-    LAG(OrderDate)
-        OVER (ORDER BY OrderDate) AS PreviousOrderDate,
 
-    DATEDIFF
-    (
-        day,
-        LAG(OrderDate)
-            OVER (ORDER BY OrderDate),
-        OrderDate
-    ) AS DaysBetweenOrders
-
-FROM Sales.Orders;
-
-Business Use
-Customer/order frequency
-Operational monitoring
-Sales activity gap
-Pipeline analysis
+Concept
+Previous Load
+     ↓
+@LastLoadTime
+     ↓
+WHERE OrderDateTime > @LastLoadTime
+     ↓
+New Records
+     ↓
+Silver / Gold
 
 
 
 
 
+58. ETL Daily Window
+-- =========================================================
+-- Create a one-day ETL extraction window
+-- Start is inclusive, end is exclusive
+-- =========================================================
+DECLARE @StartDate DATETIME2(7)
+    = '2026-08-24 00:00:00';
 
+DECLARE @EndDate DATETIME2(7)
+    = DATEADD(DAY, 1, @StartDate);
 
-
-18. ISDATE()
-কোনো value valid date হিসেবে interpret করা যায় কিনা পরীক্ষা করে।
-  
 SELECT
-    OrderDate,
-    ISDATE(OrderDate) AS IsValidDate
-FROM
-(
-    SELECT '2025-08-20' AS OrderDate
-    UNION
-    SELECT '2025-08-21'
-    UNION
-    SELECT '2025-08-23'
-    UNION
-    SELECT '2025-08'
-) AS T;
+    OrderID,
+    OrderDateTime
+FROM dt.Orders
+WHERE OrderDateTime >= @StartDate
+  AND OrderDateTime < @EndDate;
 
 
-⚠️ Important
-ISDATE() validation করার সময় target data type-এর বিষয়টিও মাথায় রাখতে হবে।
-Modern ETL pipeline-এ invalid raw date safely convert করার জন্য TRY_CONVERT() / TRY_CAST() বেশি practical।
+⭐ Best Practice
+Production ETL-এ:
+>= StartDate
+<  EndDate
+pattern ব্যবহার করা ভালো।
 
 
 
 
 
-
-
-
-
-19. GETUTCDATE()
-UTC current datetime দেয়।
-  
+59. UTC Audit Time
+-- =========================================================
+-- Create an audit timestamp in UTC
+-- Recommended for globally consistent ETL audit data
+-- =========================================================
 SELECT
-    GETUTCDATE() AS CurrentUTCDateTime;
-
-Data Engineering Use
-Distributed system-এ UTC timestamp রাখা useful।
+    SYSUTCDATETIME() AS LoadDateTimeUTC;
 
 
 
 
 
-
-
-
-20. SYSDATETIME()
-GETDATE()-এর তুলনায় বেশি precision দেয়।
-  
+60. Convert UTC Events to Kuwait
+-- =========================================================
+-- Convert centralized UTC event timestamps
+-- into Kuwait local time for business users
+-- =========================================================
 SELECT
-    SYSDATETIME() AS SystemDateTime;
-
-
-Difference
-SELECT
-    GETDATE() AS GETDATE_Value,
-    SYSDATETIME() AS SYSDATETIME_Value;
-
-
-
-
-
-
-
-
-
-21. SYSUTCDATETIME()
-UTC + high precision।
-  
-SELECT
-    SYSUTCDATETIME() AS CurrentUTCDateTime;
-
-Data warehouse audit columns-এর জন্য useful।
-
-
-
-
-
-
-
-22.CURRENT_TIMESTAMP
-SQL standard-style current timestamp।
-  
-SELECT
-    CURRENT_TIMESTAMP AS CurrentDateTime;
-
-SQL Server-এ এটি GETDATE()-এর equivalent হিসেবে কাজ করে।
-
-
-
-
-
-23. DATEFROMPARTS()
-Year, Month, Day থেকে DATE তৈরি করে।
-SELECT
-    DATEFROMPARTS
-    (
-        2025,
-        8,
-        20
-    ) AS OrderDate;
-
-
-Dynamic Example
-SELECT
-    DATEFROMPARTS
-    (
-        YEAR(OrderDate),
-        MONTH(OrderDate),
-        1
-    ) AS MonthStart
-
-FROM Sales.Orders;
-
-
-
-
-
-24. DATETIMEFROMPARTS()
-Year → Month → Day → Hour → Minute → Second → Fraction তৈরি করে।
-  
-SELECT
-    DATETIMEFROMPARTS
-    (
-        2025,       -- Year
-        8,          -- Month
-        20,         -- Day
-        14,         -- Hour
-        30,         -- Minute
-        25,         -- Second
-        0,          -- Millisecond
-        0           -- Precision
-    ) AS CreatedDateTime;
-
-
-
-
-
-
-
-25. TIMEFROMPARTS()
-শুধু time তৈরি করে।
-  
-SELECT
-    TIMEFROMPARTS
-    (
-        14,     -- Hour
-        30,     -- Minute
-        25,     -- Seconds
-        0,      -- Fraction
-        0       -- Precision
-    ) AS OrderTime;
-
-
-
-
-
-
-
-26.EOMONTH() + DATEADD()
-এটি অত্যন্ত গুরুত্বপূর্ণ business pattern।
-Month Start
-SELECT
-    OrderDate,
-
-    DATEADD
-    (
-        day,
-        1,
-        EOMONTH(OrderDate, -1)
-    ) AS MonthStart
-
-FROM Sales.Orders;
-
-
-Month End
-SELECT
-    OrderDate,
-    EOMONTH(OrderDate) AS MonthEnd
-FROM Sales.Orders;
-
-
-Next Month End
-SELECT
-    OrderDate,
-    EOMONTH(OrderDate, 1) AS NextMonthEnd
-FROM Sales.Orders;
-
-
-
-
-
-
-27. DATE_BUCKET()
-DATE_BUCKET() date/time data-কে fixed-size bucket-এ group করতে সাহায্য করে।
-SQL Server 2022+
-
-প্রতি 3 মাসে bucket
-SELECT
-    DATE_BUCKET
-    (
-        quarter,
-        1,
-        OrderDate
-    ) AS OrderQuarter,
-
-    COUNT(*) AS TotalOrders
-
-FROM Sales.Orders
-
-GROUP BY
-    DATE_BUCKET
-    (
-        quarter,
-        1,
-        OrderDate
-    );
-
-
-
-Monthly Bucket
-SELECT
-    DATE_BUCKET
-    (
-        month,
-        1,
-        OrderDate
-    ) AS MonthBucket,
-
-    COUNT(*) AS TotalOrders
-
-FROM Sales.Orders
-
-GROUP BY
-    DATE_BUCKET
-    (
-        month,
-        1,
-        OrderDate
-    );
-📌 Use case: Time-series aggregation এবং evenly sized time buckets।
-
-
-
-
-
-
-
-
-
-
-28. AT TIME ZONE
-Time zone conversion-এর জন্য গুরুত্বপূর্ণ।
-SELECT
-    CreationTime,
-
-    CreationTime
-        AT TIME ZONE 'Arab Standard Time'
+    EventID,
+    EventType,
+    EventTimeUTC,
+
+    EventTimeUTC
+        AT TIME ZONE 'UTC'
+        AT TIME ZONE 'Arabian Standard Time'
         AS KuwaitTime
 
-FROM Sales.Orders;
-
-Kuwait-এর Windows time-zone ID:
-Arab Standard Time
-
-
-
-
-
-29. SWITCHOFFSET()
-datetimeoffset value-এর offset পরিবর্তন করে।
-SELECT
-    SWITCHOFFSET
-    (
-        '2025-08-20 14:30:00 +03:00',
-        '+00:00'
-    ) AS UTCDateTime;
-
-
-আরেকটি:
-SELECT
-    SWITCHOFFSET
-    (
-        '2025-08-20 14:30:00 +00:00',
-        '+03:00'
-    ) AS KuwaitDateTime;
+FROM dt.SystemEvents;
 
 
 
 
 
 
-
-30. TODATETIMEOFFSET()
-একটি datetime value-কে specified offset সহ datetimeoffset বানায়।
-SELECT
-    TODATETIMEOFFSET
-    (
-        CAST('2025-08-20 14:30:00' AS DATETIME2),
-        '+03:00'
-    ) AS KuwaitDateTime;
-
-
-
-
-
-
-31. TRY_CONVERT()
-Invalid conversion হলে query fail না করে NULL দেয়।
-SELECT
-    TRY_CONVERT(INT, '123') AS ValidNumber,
-
-    TRY_CONVERT(INT, 'ABC') AS InvalidNumber,
-
-    TRY_CONVERT(DATE, '2025-08-20') AS ValidDate,
-
-    TRY_CONVERT(DATE, '2025-99-99') AS InvalidDate;
-
-
-Result:
-123
-NULL
-2025-08-20
-NULL
-ETL Use
-  
-SELECT
-    TRY_CONVERT(DATE, '2025-08-20') AS CleanOrderDate;
-
-Raw data cleaning-এর জন্য খুব গুরুত্বপূর্ণ।
-
-
-
-
-
-32. TRY_CAST()
-CAST()-এর safe version।
-  
-SELECT
-    TRY_CAST('123' AS INT) AS ValidNumber,
-
-    TRY_CAST('ABC' AS INT) AS InvalidNumber,
-
-    TRY_CAST('2025-08-20' AS DATE) AS ValidDate,
-
-    TRY_CAST('WrongDate' AS DATE) AS InvalidDate;
-
-
-CAST বনাম TRY_CAST
-CAST       → Conversion fail হলে error
-TRY_CAST   → Conversion fail হলে NULL
-
-  
-Data Engineering Best Practice
-  
-Raw → Clean transformation:
-SELECT
-    TRY_CAST('2025-08-20' AS DATE) AS CleanDate;
-
-
-
-
-
-
-
-33.datetime2
-datetime2 হলো SQL Server-এ modern date-time data type।
-  
-CREATE TABLE Sales.OrderAudit
+61. ETL Duration
+-- =========================================================
+-- Calculate ETL execution duration
+-- This is a realistic pipeline monitoring query
+-- =========================================================
+WITH ETLEvents AS
 (
-    OrderID INT,
-    CreatedAt DATETIME2(7)
-);
+    SELECT
+        MIN(
+            CASE
+                WHEN EventType = 'ETL_START'
+                    THEN EventTimeUTC
+            END
+        ) AS StartTime,
 
-Insert:
-INSERT INTO Sales.OrderAudit
-(
-    OrderID,
-    CreatedAt
+        MAX(
+            CASE
+                WHEN EventType = 'ETL_END'
+                    THEN EventTimeUTC
+            END
+        ) AS EndTime
+    FROM dt.SystemEvents
+    WHERE EventType IN ('ETL_START', 'ETL_END')
 )
-VALUES
+SELECT
+    StartTime,
+    EndTime,
+
+    DATEDIFF_BIG(
+        MILLISECOND,
+        StartTime,
+        EndTime
+    ) AS DurationMilliseconds
+
+FROM ETLEvents;
+
+
+
+
+
+
+62. Date Dimension Thinking 🏆
+Data Analyst/Data Engineer হিসেবে Date Dimension খুব গুরুত্বপূর্ণ।
+আমরা একটি Date Dimension তৈরি করতে পারি।
+-- =========================================================
+-- Create a reusable Date Dimension
+-- Useful for Power BI, reporting and data warehouse analysis
+-- =========================================================
+CREATE TABLE dt.DimDate
 (
-    1001,
-    SYSDATETIME()
+    DateKey INT PRIMARY KEY,
+    FullDate DATE NOT NULL,
+    YearNumber INT NOT NULL,
+    QuarterNumber INT NOT NULL,
+    MonthNumber INT NOT NULL,
+    MonthName VARCHAR(20) NOT NULL,
+    DayNumber INT NOT NULL,
+    DayName VARCHAR(20) NOT NULL,
+    WeekNumber INT NOT NULL
 );
-
-
-দেখুন:
-SELECT *
-FROM Sales.OrderAudit;
-
-
-কেন datetime2?
-বেশি precision
-পুরনো datetime-এর চেয়ে ভালো range
-modern SQL Server design-এর জন্য preferred
-
-
-
-
-
-
-
-34. datetimeoffset
-Date + Time + UTC Offset সংরক্ষণ করে।
-CREATE TABLE Sales.OrderTimeZone
-(
-    OrderID INT,
-    OrderCreatedAt DATETIMEOFFSET(7)
-);
-
-
-Insert:
-INSERT INTO Sales.OrderTimeZone
-(
-    OrderID,
-    OrderCreatedAt
-)
-VALUES
-(
-    1001,
-    TODATETIMEOFFSET
-    (
-        CAST('2025-08-20 14:30:00' AS DATETIME2),
-        '+03:00'
-    )
-);
-
-
-Check:
-SELECT *
-FROM Sales.OrderTimeZone;
-
-
-Example:
-2025-08-20 14:30:00 +03:00
-কখন ব্যবহার করবেন?
-🌍 Global applications
-🌍 Multi-country data
-🌍 Event timestamps
-🌍 Distributed data pipelines
-
-
-
-
-
-
-
-
-35. Date Range Filtering
-এটি Data Analyst এবং Data Engineer—দুই ক্ষেত্রেই অত্যন্ত গুরুত্বপূর্ণ।
-নির্দিষ্ট Date Range
-  
-SELECT
-    *
-FROM Sales.Orders
-WHERE OrderDate >= '2025-08-01'
-  AND OrderDate <  '2025-09-01';
-
-
-এটি August 2025-এর সব order দেবে।
-Best Practice
-এভাবে না:
-WHERE MONTH(OrderDate) = 8
-
-  
-বরং:
-WHERE OrderDate >= '2025-08-01'
-  AND OrderDate <  '2025-09-01'
-কারণ column-এর উপর function প্রয়োগ না করলে index ব্যবহার করার সুযোগ বেশি থাকে।
-
-
-
-
-
-
-
-
-
-36. Year Filtering
-SELECT
-    *
-FROM Sales.Orders
-WHERE OrderDate >= '2025-01-01'
-  AND OrderDate <  '2026-01-01';
-
-
-
-
-
-37. Month/Year Analysis
-SELECT
-    YEAR(OrderDate) AS OrderYear,
-    MONTH(OrderDate) AS OrderMonth,
-
-    COUNT(*) AS TotalOrders,
-
-    SUM(OrderAmount) AS TotalSales
-FROM Sales.Orders
-GROUP BY
-    YEAR(OrderDate),
-    MONTH(OrderDate)
-ORDER BY
-    OrderYear,
-    OrderMonth;
-
-এটাই বাস্তব Sales Dashboard-এর অন্যতম basic query pattern।
-
-
-
-
-
-
-
-
-38. Fiscal Year Calculation
-ধরি company-এর fiscal year July → June।
-July 2025 থেকে FY2026 শুরু।
-SELECT
-    OrderID,
-    OrderDate,
-
-    YEAR
-    (
-        DATEADD
-        (
-            month,
-            6,
-            OrderDate
-        )
-    ) AS FiscalYear
-
-FROM Sales.Orders;
-
-
--- Fiscal Month
-SELECT
-    OrderID,
-    OrderDate,
-
-    MONTH
-    (
-        DATEADD
-        (
-            month,
-            6,
-            OrderDate
-        )
-    ) AS FiscalMonth
-
-FROM Sales.Orders;
-
-
-
-
-
-
-
-39. Date Dimension
-Data Warehouse-এ একটি dedicated Date Dimension থাকা industry-standard approach।
-/* ============================================================
-   DATE DIMENSION
-   ============================================================ */
-
-CREATE TABLE Sales.DateDimension
-(
-    DateKey        INT PRIMARY KEY,
-    FullDate       DATE,
-    YearNumber     INT,
-    QuarterNumber  INT,
-    MonthNumber    INT,
-    MonthName      VARCHAR(20),
-    DayNumber      INT,
-    WeekNumber     INT
-);
-
-
 GO
-Sample date dimension data:
-INSERT INTO Sales.DateDimension
+
+
+
+
+
+
+63. Generate Date Dimension
+-- =========================================================
+-- Generate calendar dates for 2026-2030
+-- Uses DATEADD and DATEPART
+-- =========================================================
+DECLARE @StartDate DATE = '2026-01-01';
+DECLARE @EndDate   DATE = '2030-12-31';
+
+;WITH Calendar AS
+(
+    SELECT @StartDate AS FullDate
+
+    UNION ALL
+
+    SELECT DATEADD(DAY, 1, FullDate)
+    FROM Calendar
+    WHERE FullDate < @EndDate
+)
+INSERT INTO dt.DimDate
 (
     DateKey,
     FullDate,
@@ -1106,169 +1850,306 @@ INSERT INTO Sales.DateDimension
     MonthNumber,
     MonthName,
     DayNumber,
+    DayName,
     WeekNumber
 )
-VALUES
-(20250101, '2025-01-01', 2025, 1, 1,  'January',  1, 1),
-(20250102, '2025-01-02', 2025, 1, 1,  'January',  2, 1),
-(20250103, '2025-01-03', 2025, 1, 1,  'January',  3, 1),
-(20250104, '2025-01-04', 2025, 1, 1,  'January',  4, 1),
-(20250105, '2025-01-05', 2025, 1, 1,  'January',  5, 1),
-
-(20250201, '2025-02-01', 2025, 1, 2,  'February', 1, 5),
-(20250202, '2025-02-02', 2025, 1, 2,  'February', 2, 5),
-(20250203, '2025-02-03', 2025, 1, 2,  'February', 3, 6),
-
-(20250301, '2025-03-01', 2025, 1, 3,  'March',    1, 9),
-(20250302, '2025-03-02', 2025, 1, 3,  'March',    2, 9),
-
-(20250401, '2025-04-01', 2025, 2, 4,  'April',    1, 14),
-(20250501, '2025-05-01', 2025, 2, 5,  'May',      1, 18),
-(20250601, '2025-06-01', 2025, 2, 6,  'June',     1, 22),
-
-(20250701, '2025-07-01', 2025, 3, 7,  'July',     1, 27),
-(20250801, '2025-08-01', 2025, 3, 8,  'August',   1, 31),
-(20250901, '2025-09-01', 2025, 3, 9,  'September',1, 36),
-
-(20251001, '2025-10-01', 2025, 4, 10, 'October',  1, 40),
-(20251101, '2025-11-01', 2025, 4, 11, 'November', 1, 44),
-(20251201, '2025-12-01', 2025, 4, 12, 'December', 1, 48),
-
-(20260101, '2026-01-01', 2026, 1, 1,  'January',  1, 1),
-(20260201, '2026-02-01', 2026, 1, 2,  'February', 1, 5);
-GO
-
-  
-তারপর Orders-এর সাথে date dimension ব্যবহার:
 SELECT
-    D.YearNumber,
-    D.MonthNumber,
-    D.MonthName,
-    COUNT(O.OrderID) AS TotalOrders,
-    SUM(O.OrderAmount) AS TotalSales
+    CONVERT(INT, CONVERT(CHAR(8), FullDate, 112)) AS DateKey,
 
-FROM Sales.Orders AS O
-
-INNER JOIN Sales.DateDimension AS D
-    ON O.OrderDate = D.FullDate
-
-GROUP BY
-    D.YearNumber,
-    D.MonthNumber,
-    D.MonthName;
-
-
-
-
-
-
-40. Date Dimension দিয়ে Fiscal Analysis
-SELECT
     FullDate,
 
-    YearNumber,
+    YEAR(FullDate) AS YearNumber,
 
-    MonthNumber,
+    DATEPART(
+        QUARTER,
+        FullDate
+    ) AS QuarterNumber,
 
-    CASE
-        WHEN MonthNumber >= 7
-            THEN YearNumber + 1
-        ELSE YearNumber
-    END AS FiscalYear
+    MONTH(FullDate) AS MonthNumber,
 
-FROM Sales.DateDimension;
-এখানে CASE শুধু business classification-এর জন্য supporting SQL syntax হিসেবে ব্যবহৃত হয়েছে।
+    DATENAME(
+        MONTH,
+        FullDate
+    ) AS MonthName,
 
+    DAY(FullDate) AS DayNumber,
 
+    DATENAME(
+        WEEKDAY,
+        FullDate
+    ) AS DayName,
 
+    DATEPART(
+        WEEK,
+        FullDate
+    ) AS WeekNumber
 
-
-
-
-
-
-
-41. সব গুরুত্বপূর্ণ Function একসাথে Revision
-  
-#	               Function / Feature	              প্রধান কাজ
-1	               GETDATE()	                      Current local datetime
-2	               DATETRUNC()	                    Period-এর শুরু
-3	               DATENAME()	                      Date part-এর name
-4	               DATEPART()	                      Numeric date part
-5	               YEAR()	                          Year
-6	               MONTH()	                        Month
-7	               DAY()	                          Day
-8	               EOMONTH()	                      Month end
-9	               FORMAT()	                        Presentation formatting
-10	             CONVERT()	                      Type conversion + style
-11	             CAST()	                          Type conversion
-12	             DATEADD()	                      Date add/subtract
-13	             DATEDIFF()	                      Date difference
-14	             ISDATE()	                        Date validation
-15	             GETUTCDATE()	                    Current UTC
-16	             SYSDATETIME()	                  High precision local datetime
-17	             SYSUTCDATETIME()	                High precision UTC
-18	             CURRENT_TIMESTAMP	              Current datetime
-19	             DATEFROMPARTS()	                DATE তৈরি
-20	             DATETIMEFROMPARTS()	            DATETIME তৈরি
-21	             TIMEFROMPARTS()	                TIME তৈরি
-22	             EOMONTH()+DATEADD()	            Month boundary
-23	             DATE_BUCKET()	                  Time bucket
-24	             AT TIME ZONE	                    Time-zone conversion
-25	             SWITCHOFFSET()	                  Offset পরিবর্তন
-26	             TODATETIMEOFFSET()	              datetime → offset datetime
-27	             TRY_CONVERT()	                  Safe conversion
-28	            TRY_CAST()	                      Safe CAST
-29	            datetime2	                        Modern datetime datatype
-30	            datetimeoffset	                  Date + time + offset
-31	            Date Range	                      Period filtering
-32	            Fiscal Calculation	              Financial calendar
-33	            Date Dimension	                  Data warehouse calendar
+FROM Calendar
+OPTION (MAXRECURSION 0);
+GO
 
 
 
 
 
+64. Date Dimension ব্যবহার করে Sales
+-- =========================================================
+-- Join sales with Date Dimension
+-- This is a standard data warehouse reporting pattern
+-- =========================================================
+SELECT
+    d.YearNumber,
+    d.MonthNumber,
+    d.MonthName,
 
-🎯 সবচেয়ে গুরুত্বপূর্ণ Best Practices
-🟢 1. Storage
-ভালো:
-OrderDate DATE
-CreationTime DATETIME2(7)
-OrderCreatedAt DATETIMEOFFSET(7)
+    COUNT(DISTINCT o.OrderID) AS TotalOrders,
 
-  
-🟢 2. Date Filtering
-Preferred:
-WHERE OrderDate >= '2025-08-01'
-  AND OrderDate <  '2025-09-01'
+    SUM(
+        oi.Quantity * oi.UnitPrice
+    ) AS TotalSales
+
+FROM dt.Orders AS o
+
+INNER JOIN dt.DimDate AS d
+    ON o.OrderDate = d.FullDate
+
+INNER JOIN dt.OrderItems AS oi
+    ON o.OrderID = oi.OrderID
+
+GROUP BY
+    d.YearNumber,
+    d.MonthNumber,
+    d.MonthName
+
+ORDER BY
+    d.YearNumber,
+    d.MonthNumber;
+
+
+
+
+
+
+65. Important Real-World Patterns ⭐
+    Date Filtering — Bad vs Good
 
   
-🟢 3. ETL Conversion
-Raw data:
-TRY_CONVERT(DATE, RawDate)
-Invalid data হলে NULL পাওয়া যাবে, pipeline অযথা fail করবে না।
+❌ Avoid when possible
+-- =========================================================
+-- Avoid applying a function directly to the indexed column
+-- This can reduce index seek opportunities
+-- =========================================================
+SELECT *
+FROM dt.Orders
+WHERE CAST(OrderDateTime AS DATE) = '2026-08-10';
+
+
+✅ Better
+-- =========================================================
+-- Use a half-open date range
+-- This is generally more index-friendly
+-- =========================================================
+SELECT *
+FROM dt.Orders
+WHERE OrderDateTime >= '2026-08-10 00:00:00'
+  AND OrderDateTime <  '2026-08-11 00:00:00';
+
+
+
+
+
+66. -- Don't Use FORMAT() for Heavy ETL
+আপনার এই Date/Time list-এ FORMAT() নেই, কারণ এটি Date/Time function-এর core analytical function নয়।
+Reporting display-এর জন্য ব্যবহার করা যায়, কিন্তু large dataset-এর ETL/query transformation-এ সাধারণত CONVERT()/CAST() বেশি performant।
+
+
+
+
+
+67. Avoid Ambiguous Date Strings
+❌ Avoid
+-- =========================================================
+-- Ambiguous date representation
+-- =========================================================
+SELECT CAST('08/09/2026' AS DATE);
+
+
+এখানে month/day interpretation context-এর ওপর নির্ভর করতে পারে।
+✅ Better
+-- =========================================================
+-- ISO-style date representation
+-- =========================================================
+SELECT CAST('2026-08-09' AS DATE);
+
+আর strict ETL conversion-এর জন্য TRY_CONVERT() ব্যবহার করুন।
+
+
+
+
+
+
+68. Complete Function Checklist ✅
+আপনার দেওয়া সব functions এখন covered:
+🕒 Data Types
+- ✅ DATE
+- ✅ TIME
+- ✅ DATETIME
+- ✅ DATETIME2
+- ✅ SMALLDATETIME
+- ✅ DATETIMEOFFSET
+🕐 Current Date/Time
+- ✅ GETDATE()
+- ✅ CURRENT_TIMESTAMP
+- ✅ GETUTCDATE()
+- ✅ SYSDATETIME()
+- ✅ SYSUTCDATETIME()
+- ✅ SYSDATETIMEOFFSET()
+📅 Date Part
+- ✅ YEAR()
+- ✅ MONTH()
+- ✅ DAY()
+- ✅ DATEPART()
+- ✅ DATENAME()
+➕ Date Calculation
+- ✅ DATEADD()
+- ✅ DATEDIFF()
+- ✅ DATEDIFF_BIG()
+📆 Boundary
+- ✅ EOMONTH()
+- ✅ DATETRUNC()
+🏗️ Construction
+- ✅ DATEFROMPARTS()
+- ✅ TIMEFROMPARTS()
+- ✅ DATETIMEFROMPARTS()
+- ✅ DATETIME2FROMPARTS()
+- ✅ DATETIMEOFFSETFROMPARTS()
+- ✅ SMALLDATETIMEFROMPARTS()
+🔄 Conversion
+- ✅ CAST()
+- ✅ CONVERT()
+- ✅ TRY_CAST()
+- ✅ TRY_CONVERT()
+🔍 Validation
+- ✅ ISDATE()
+🌍 Time Zone
+- ✅ AT TIME ZONE
+- ✅ SWITCHOFFSET()
+- ✅ TODATETIMEOFFSET()
+🧠 NULL & Logic
+- ✅ ISNULL()
+- ✅ COALESCE()
+- ✅ NULLIF()
+- ✅ CASE
+
+
+
+
+
+69. Industry Best Practices 🏆
+🗄️ Data Types
+- 🥇 New systems: DATETIME2
+- 🌍 Global timestamp: DATETIMEOFFSET বা UTC DATETIME2
+- 📅 Date only: DATE
+- ⏰ Time only: TIME
+- ⚠️ Legacy: SMALLDATETIME/DATETIME
+  
+⚙️  Data Engineering
+- 🌎 Store: UTC where appropriate
+- 🕒 Display:-- Convert to user's/business timezone
+- 🔄 Incremental ETL: Watermark + DATEADD()
+- 🧹 Bad raw dates: TRY_CAST() / TRY_CONVERT()
+- 🚫 Avoid: ambiguous date strings
+- ⚡ Performance: indexed datetime column-এর ওপর unnecessary function avoid করুন
+  
+📊  Data Analytics
+- 📅 Month: DATETRUNC(MONTH, Date)
+- 📆 Month End: EOMONTH(Date)
+- 📈 Year: YEAR(Date)
+- 📊 Quarter: DATEPART(QUARTER, Date)
+- 🗓️ Month Name: DATENAME(MONTH, Date)
+- ⏱️ Duration: DATEDIFF()
+- 🌍 Timezone: AT TIME ZONE
+
+
+
+
+
+
+70. Hands-on Project 🎯
+Project: E-Commerce Sales & ETL Date-Time Analytics
+এই database-এর ওপর নিচের project নিজে solve করুন।
 
   
-🟢 4. Presentation
-FORMAT() ব্যবহার করুন presentation/reporting layer-এ।
-FORMAT(OrderDate, 'MMM yyyy')
-কিন্তু database filtering/large-scale transformation-এ অপ্রয়োজনীয় FORMAT() এড়িয়ে চলুন।
+Level 1 — Beginner 🟢
+- 📅 প্রতিটি order-এর Year, Month, Day বের করুন।
+- 📆 প্রতিটি order-এর MonthName বের করুন।
+- 🗓️ কোন order weekend-এ হয়েছে?
+- ⏰ কোন order business hours-এর মধ্যে হয়েছে?
+- 📅 প্রতিটি order-এর month-end বের করুন।
 
   
-🟢 5. Data Warehouse
-Production Data Warehouse-এ:
-Fact Sales
-     ↓
-Date Dimension
-     ↓
-Year / Quarter / Month / Week / Day
-     ↓
-Fiscal Calendar
-অর্থাৎ প্রতিটি fact table-এ date dimension-এর সাথে relationship রাখা অত্যন্ত গুরুত্বপূর্ণ।
+Level 2 — Intermediate 🟡
+- 📊 Month-wise total sales বের করুন।
+- 📈 Quarter-wise sales বের করুন।
+- 🚚 Average delivery days বের করুন।
+- 👨‍💼 Employee-wise order count বের করুন।
+- 🏆 কোন employee সবচেয়ে বেশি sales generate করেছে?
+- 📅 Last 30 days orders বের করুন।
+
+  
+Level 3 — Advanced 🔴
+- 🌍 UTC event time → Kuwait time conversion করুন।
+- 🌍 UTC → US Eastern conversion করুন।
+- ⚙️ ETL start/end duration calculate করুন।
+- 🔄 Incremental ETL watermark query তৈরি করুন।
+- 🧹 Invalid date staging data identify করুন।
+- 🕒 Employee working hours calculate করুন।
+- 📊 Monthly sales Date Dimension-এর মাধ্যমে তৈরি করুন।
+
+
+  
+Level 4 — Data Engineering 🧠
+একটি ETL architecture design করুন:
+                 SOURCE
+                   │
+                   ▼
+          Raw/Staging Tables
+                   │
+                   ▼
+          TRY_CONVERT / TRY_CAST
+                   │
+                   ▼
+              BRONZE
+                   │
+                   ▼
+       Date/Time Data Quality
+                   │
+                   ▼
+               SILVER
+                   │
+                   ▼
+       Date Dimension + Facts
+                   │
+                   ▼
+                GOLD
+                   │
+                   ▼
+              Power BI
 
 
 
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+  
