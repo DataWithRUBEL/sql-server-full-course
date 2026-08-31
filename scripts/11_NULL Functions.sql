@@ -1794,4 +1794,56 @@ NULL-এর ক্ষেত্রে Golden Rules
 
 
 
+    
+
+NULL Functions & NULL Handling
+🟢 Beginner
+- ✅ NULL
+- ✅ IS NULL
+- ✅ IS NOT NULL
+- ✅ ISNULL()
+- ✅ COALESCE()
+- ✅ NULLIF()
+- ✅ COUNT(*)
+- ✅ COUNT(column)
+- ✅ SUM()
+- ✅ AVG()
+- ✅ MIN()
+- ✅ MAX()
+- ✅ CASE
+- ✅ CONCAT()
+- ✅ CONCAT_WS()
+🟡 Intermediate
+- ✅ NULL + WHERE
+- ✅ NULL + AND / OR / NOT
+- ✅ Three-Valued Logic
+- ✅ NULL + Arithmetic
+- ✅ NULL + GROUP BY
+- ✅ NULL + HAVING
+- ✅ NULL + JOIN
+- ✅ LEFT JOIN ... IS NULL
+- ✅ NOT EXISTS
+- ✅ NOT IN + NULL
+- ✅ NULL + DISTINCT
+- ✅ NULL + ORDER BY
+- ✅ NULL + Window Functions
+- ✅ NULL + Set Operators
+- ✅ NULL + PIVOT / UNPIVOT
+🔴 Advanced / Data Engineering
+- ✅ NOT NULL
+- ✅ PRIMARY KEY
+- ✅ FOREIGN KEY
+- ✅ UNIQUE
+- ✅ NULL + Constraints
+- ✅ NULL + Indexes
+- ✅ Filtered Index
+- ✅ NULL Profiling
+- ✅ NULL Percentage
+- ✅ ETL NULL Handling
+- ✅ Bronze → Silver NULL Cleansing
+- ✅ Unknown Member Strategy
+- ✅ Data Quality Checks
+- ✅ NULL Reconciliation
+- ✅ Incremental Load + NULL
+- ✅ Fact / Dimension + NULL
 
