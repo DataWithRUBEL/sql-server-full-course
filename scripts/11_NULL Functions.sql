@@ -1,1268 +1,667 @@
+Project Architecture
+NullFunctionsDB
+│
+├── source
+│   ├── Customers
+│   ├── Products
+│   ├── Categories
+│   ├── Departments
+│   ├── Employees
+│   ├── Orders
+│   ├── OrderItems
+│   └── Payments
+│
+├── bronze
+│   └── Raw imported data
+│
+├── silver
+│   └── Cleansed / standardized data
+│
+├── gold
+│   ├── dim_customer
+│   ├── dim_product
+│   └── fact_sales
+│
+├── etl
+│   └── ETL control / staging
+│
+└── qa
+    └── Data Quality Checks
+🎯 Business Scenario
+ধরুন এটি একটি E-commerce / Retail Company।
+আমাদের data-তে ইচ্ছাকৃতভাবে কিছু NULL থাকবে:
+- Customer-এর phone missing
+- Customer-এর email missing
+- Product-এর discount NULL
+- Employee-এর manager NULL
+- Order-এর shipped date NULL
+- Payment-এর payment date NULL
+- Payment status NULL
+- Product category missing
+- Customer country missing
+এর মাধ্যমে বাস্তব production-এর NULL problem practice করা যাবে।
+
+
+
+
+
+🟢 PART 1 — NULL Fundamentals
 1. NULL কী?
 NULL মানে:
-Unknown / Missing / Not Available
+Unknown / Missing / Not Available / Not Applicable
 
-এটি 0 নয়।
-এটি '' empty string-ও নয়।
-এটি ' ' blank space-ও নয়।
-/* ============================================================================
-   NULL BASICS
+NULL zero নয়।
+NULL empty string নয়।
+NULL false নয়।
 
-   NULL != 0
-   NULL != ''
-   NULL != ' '
-============================================================================ */
-
+   
+/* NULL এবং zero-এর difference */
 SELECT
-    NULL AS NullValue,
+    NULL AS MissingValue,
     0 AS ZeroValue,
-    '' AS EmptyString,
-    ' ' AS BlankSpace;
+    '' AS EmptyString;
+গুরুত্বপূর্ণ
+NULL      → Unknown
+0         → Known numeric value
+''        → Known empty text
+'Unknown' → Known text
 
 
 
 
-2. TASK 1 — NULL Handle করার সময় Aggregation
-মূল code:
-AVG(Score)
-AVG() নিজে থেকেই NULL বাদ দেয়।
-/* ============================================================================
-   TASK 1:
-   Compare:
-   - Original Score
-   - NULL replaced by 0
-   - AVG ignoring NULL
-   - AVG treating NULL as 0
-============================================================================ */
 
+2. IS NULL
+কোন column NULL কিনা খুঁজতে:
+/* =========================================================
+   Find customers whose email is missing
+   ========================================================= */
 SELECT
     CustomerID,
-    Score,
-
-    -- NULL হলে 0 দেখাবে
-    COALESCE(Score, 0) AS Score2,
-
-    -- AVG automatically ignores NULL
-    AVG(Score) OVER () AS AvgScores,
-
-    -- এখানে NULL কে 0 ধরে average করা হচ্ছে
-    AVG(COALESCE(Score, 0)) OVER () AS AvgScores2
-
-FROM Sales.Customers;
+    CustomerName,
+    Email
+FROM source.Customers
+WHERE Email IS NULL;
 
 
-গুরুত্বপূর্ণ পার্থক্য
-ধরা যাক:
-80
-90
-NULL
-70
-AVG(Score):
-(80 + 90 + 70) / 3
-= 80
+❌ ভুল
+WHERE Email = NULL
+এটি কাজ করবে না।
 
-  
-কিন্তু:
-AVG(COALESCE(Score,0))
-হবে:
-(80 + 90 + 0 + 70) / 4
-= 60
-
-  
-⚠️ Business Logic
-NULL → 0 করা সবসময় সঠিক নয়।
-NULL = customer has no score
-0 = customer scored zero
-দুটো business meaning আলাদা।
+   
+✅ সঠিক
+WHERE Email IS NULL
 
 
 
 
 
-
-
-
-3. COALESCE()
-COALESCE() প্রথম non-NULL value return করে।
-/* ============================================================================
-   COALESCE()
-
-   Return the first non-NULL value.
-============================================================================ */
-
+3. IS NOT NULL
+/* =========================================================
+   Find customers who provided an email
+   ========================================================= */
 SELECT
     CustomerID,
-    FirstName,
-    LastName,
-
-    COALESCE(LastName, 'Unknown') AS LastName_Cleaned,
-
-    COALESCE(
-        Email,
-        'No Email Available'
-    ) AS Email_Cleaned
-
-FROM Sales.Customers;
-
-
-Real-world ETL
-/* ============================================================================
-   DATA ENGINEERING EXAMPLE
-
-   Create standardized customer attributes.
-============================================================================ */
-
-SELECT
-    CustomerID,
-
-    COALESCE(FirstName, 'Unknown') AS FirstName,
-
-    COALESCE(LastName, 'Unknown') AS LastName,
-
-    COALESCE(City, 'Unknown') AS City,
-
-    COALESCE(Country, 'Unknown') AS Country
-
-FROM Sales.Customers;
-
-
-
+    CustomerName,
+    Email
+FROM source.Customers
+WHERE Email IS NOT NULL;
 
 
 
 
 
 4. ISNULL()
-SQL Server-specific function।
-/* ============================================================================
-   ISNULL()
+SQL Server-এর খুব গুরুত্বপূর্ণ NULL function।
+Syntax
+ISNULL(check_expression, replacement_value)
 
-   SQL Server-specific NULL replacement function.
-============================================================================ */
-
+   
+Example
+/* =========================================================
+   Replace missing email with business-friendly text
+   ========================================================= */
 SELECT
-    CustomerID,
-    Score,
-
-    ISNULL(Score, 0) AS Score_Cleaned
-
-FROM Sales.Customers;
+    CustomerName,
+    ISNULL(Email, 'No Email Provided') AS Email
+FROM source.Customers;
 
 
-COALESCE vs ISNULL
-  
-Feature	           COALESCE	      ISNULL
-SQL Standard	     ✅	           ❌
-SQL Server	       ✅	           ✅
-Multiple values	   ✅	           ❌
-2 values	         ✅	           ✅
-Portability	       ⭐⭐⭐⭐⭐	  ⭐⭐⭐
- 
--- COALESCE
-SELECT COALESCE(NULL, NULL, 100);
-
--- ISNULL
-SELECT ISNULL(NULL, 100);
-Best Practice
-SQL Server-only code:
-ISNULL()
-সহজ এবং readable।
-Cross-platform SQL:
-COALESCE()
-ব্যবহার করা ভালো।
-
-
-
-
-
-
-5. TASK 2 — NULL + Mathematical Operators
-/* ============================================================================
-   TASK 2:
-   - Build full customer name
-   - Add 10 bonus points
-   - Handle NULL values
-============================================================================ */
-
+Numeric example
+/* =========================================================
+   Replace missing discount with zero
+   ========================================================= */
 SELECT
-    CustomerID,
-    FirstName,
-    LastName,
-
-    -- NULL LastName হলে পুরো expression NULL হয়ে যেত।
-    -- তাই COALESCE ব্যবহার করা হয়েছে।
-    FirstName + ' ' + COALESCE(LastName, '') AS FullName,
-
-    Score,
-
-    -- NULL Score হলে 10 যোগ করলে NULL হবে।
-    -- তাই আগে NULL কে 0 করা হয়েছে।
-    COALESCE(Score, 0) + 10 AS ScoreWithBonus
-
-FROM Sales.Customers;
+    ProductName,
+    DiscountPercent,
+    ISNULL(DiscountPercent, 0) AS EffectiveDiscount
+FROM source.Products;
 
 
-কেন?
-এটি:
-Score + 10
-যদি:
-Score = NULL
-তাহলে:
-NULL + 10 = NULL
-কিন্তু:
-COALESCE(Score,0) + 10
-হলে:
-0 + 10 = 10
-
-
-
-
-
-6. NULL + Arithmetic
-/* ============================================================================
-   NULL + ARITHMETIC
-
-   Any arithmetic operation involving NULL normally returns NULL.
-============================================================================ */
-
+Real project
+/* =========================================================
+   Calculate stock while treating NULL stock as zero
+   ========================================================= */
 SELECT
-    10 + NULL AS Addition,
-    10 - NULL AS Subtraction,
-    10 * NULL AS Multiplication,
-    10 / NULL AS Division;
+    ProductName,
+    ISNULL(StockQty, 0) AS StockQty
+FROM source.Products;
+
+⚠️ Important
+ISNULL() SQL Server-specific।
+
+
+
+
+
+
+
+5. COALESCE()
+একাধিক সম্ভাব্য column/value থেকে প্রথম non-NULL value নেয়।
+Syntax
+COALESCE(expression1, expression2, expression3, ...)
+
+   
+Example
+/* =========================================================
+   Select preferred customer contact:
+   Email → Phone → fallback text
+   ========================================================= */
+SELECT
+    CustomerName,
+    COALESCE(
+        Email,
+        Phone,
+        'No Contact Information'
+    ) AS PreferredContact
+FROM source.Customers;
+
+
+
+ISNULL বনাম COALESCE
+   
+Feature	           ISNULL	      COALESCE
+SQL Server	        ✅	         ✅
+Multiple values	  ❌	         ✅
+Standard SQL	     ❌	         ✅
+2 values	           Excellent	   Excellent
+
+
+Rule
+Simple replacement → ISNULL()
+Multiple fallback → COALESCE()
+Portable SQL → COALESCE()
+
+
+
+
+
+6. NULLIF()
+দুটি value একই হলে NULL return করে।
+Syntax
+NULLIF(expression1, expression2)
+
+   
+Example
+/* =========================================================
+   Convert zero quantity into NULL
+   Useful when zero means "missing/invalid"
+   ========================================================= */
+SELECT
+    OrderItemID,
+    Quantity,
+    NULLIF(Quantity, 0) AS CleanQuantity
+FROM source.OrderItems;
+
+
+Division-by-zero prevention
+/* =========================================================
+   NULLIF prevents divide-by-zero
+   ========================================================= */
+SELECT
+    100.0 / NULLIF(0, 0) AS SafeDivision;
 
 Result:
 NULL
-NULL
-NULL
-NULL
 
 
 
 
 
-7. TASK 3 — NULL Sorting
-SQL Server-এ সাধারণ ascending order-এ NULL সাধারণত শুরুতে আসে।
-আমরা চাই:
-Lowest Score
-...
-Highest Score
-NULL
-/* ============================================================================
-   TASK 3:
-   Sort customers from lowest score to highest score
-   while keeping NULL values at the bottom.
-============================================================================ */
-
+🟢 PART 2 — Aggregate Functions + NULL
+7. COUNT(*)
+সব row count করে।
+/* =========================================================
+   Count all customer records
+   ========================================================= */
 SELECT
-    CustomerID,
-    Score
+    COUNT(*) AS TotalCustomers
+FROM source.Customers;
 
-FROM Sales.Customers
+COUNT(*) NULL ignore করে না।
+কারণ এটি row count করে।
 
-ORDER BY
+
+
+
+
+8. COUNT(column)
+শুধু non-NULL values count করে।
+/* =========================================================
+   Count customers who provided email
+   ========================================================= */
+SELECT
+    COUNT(Email) AS CustomersWithEmail
+FROM source.Customers;
+
+
+Very important
+COUNT(*)       → সব rows
+COUNT(Email)   → Email যাদের NULL নয়
+
+
+
+
+
+
+9. NULL Percentage
+এটি Data Analyst/Data Engineer-এর জন্য অত্যন্ত গুরুত্বপূর্ণ।
+/* =========================================================
+   Calculate missing email percentage
+   ========================================================= */
+SELECT
+    COUNT(*) AS TotalCustomers,
+
+    COUNT(Email) AS CustomersWithEmail,
+
+    COUNT(*) - COUNT(Email) AS MissingEmail,
+
+    CAST(
+        100.0 * (COUNT(*) - COUNT(Email))
+        / NULLIF(COUNT(*), 0)
+        AS DECIMAL(5,2)
+    ) AS MissingEmailPercentage
+
+FROM source.Customers;
+
+
+
+
+
+
+10. SUM()
+SUM NULL values ignore করে।
+/* =========================================================
+   Calculate total payment amount
+   NULL amounts are ignored by SUM
+   ========================================================= */
+SELECT
+    SUM(Amount) AS TotalPaymentAmount
+FROM source.Payments;
+
+
+সব value যদি NULL হয়?
+SUM() → NULL return করতে পারে।
+
+   
+তাই:
+/* =========================================================
+   Convert NULL aggregate result into zero
+   ========================================================= */
+SELECT
+    ISNULL(SUM(Amount), 0) AS TotalPaymentAmount
+FROM source.Payments;
+
+
+
+
+
+
+
+11. AVG()
+NULL ignore করে average calculation করে।
+/* =========================================================
+   Calculate average product price
+   NULL UnitPrice is excluded
+   ========================================================= */
+SELECT
+    AVG(UnitPrice) AS AveragePrice
+FROM source.Products;
+
+
+
+
+
+
+12. MIN()
+/* =========================================================
+   Find minimum product price
+   ========================================================= */
+SELECT
+    MIN(UnitPrice) AS MinimumPrice
+FROM source.Products;
+NULL ignore করে।
+
+
+
+
+
+
+13. MAX()
+/* =========================================================
+   Find maximum product price
+   ========================================================= */
+SELECT
+    MAX(UnitPrice) AS MaximumPrice
+FROM source.Products;
+
+
+
+
+
+🟢 PART 3 — CASE + NULL
+14. CASE
+NULL handling-এ CASE অত্যন্ত গুরুত্বপূর্ণ।
+/* =========================================================
+   Classify customers based on email availability
+   ========================================================= */
+SELECT
+    CustomerName,
+    Email,
     CASE
-        WHEN Score IS NULL THEN 1
-        ELSE 0
-    END,
-    Score;
-
-⭐ Best Practice
-NULL-last sorting-এর জন্য:
-ORDER BY
-    CASE WHEN ColumnName IS NULL THEN 1 ELSE 0 END,
-    ColumnName;
-খুব practical pattern।
+        WHEN Email IS NULL THEN 'Missing Email'
+        ELSE 'Email Available'
+    END AS EmailStatus
+FROM source.Customers;
 
 
+Multiple NULL rules
+/* =========================================================
+   Customer contact quality classification
+   ========================================================= */
+SELECT
+    CustomerName,
+    CASE
+        WHEN Email IS NOT NULL AND Phone IS NOT NULL
+            THEN 'Complete Contact'
 
-  
+        WHEN Email IS NOT NULL OR Phone IS NOT NULL
+            THEN 'Partial Contact'
+
+        ELSE 'No Contact'
+    END AS ContactQuality
+FROM source.Customers;
 
 
-8. TASK 4 — NULLIF() দিয়ে Division by Zero
-প্রথমে বিপজ্জনক query:
-/* ============================================================================
-   DO NOT USE THIS VERSION WHEN Quantity CAN BE ZERO
-============================================================================ */
 
--- SELECT
---     OrderID,
---     Sales,
---     Quantity,
---     Sales / Quantity AS Price
--- FROM Sales.Orders;
-Quantity = 0 হলে error হবে:
-Divide by zero error encountered.
 
-  
-সঠিক পদ্ধতি
-/* ============================================================================
-   TASK 4:
-   NULLIF converts Quantity = 0 into NULL.
 
-   Therefore:
-       Sales / NULL = NULL
 
-   instead of:
-       Sales / 0 = ERROR
-============================================================================ */
+🟢 PART 4 — CONCAT() এবং CONCAT_WS()
+15. CONCAT()
+NULL থাকলেও string concatenation break করে না।
+/* =========================================================
+   Build customer display information
+   CONCAT converts NULL values safely
+   ========================================================= */
+SELECT
+    CONCAT(
+        CustomerName,
+        ' - ',
+        Country
+    ) AS CustomerDisplay
+FROM source.Customers;
 
+
+
+
+
+
+16. CONCAT_WS()
+Separator সহ multiple values combine করে।
+/* =========================================================
+   Build customer contact string
+   NULL values are automatically skipped
+   ========================================================= */
+SELECT
+    CustomerName,
+    CONCAT_WS(
+        ' | ',
+        Email,
+        Phone,
+        Country
+    ) AS CustomerContact
+FROM source.Customers;
+
+
+Example:
+ahmed@example.com | +96550000001 | Kuwait
+NULL হলে separator-এর duplicate সমস্যা কমে।
+
+
+
+
+
+
+🟡 PART 5 — NULL + WHERE
+17. NULL + WHERE
+/* =========================================================
+   Find orders that have not shipped yet
+   ========================================================= */
 SELECT
     OrderID,
-    Sales,
-    Quantity,
-
-    Sales / NULLIF(Quantity, 0) AS Price
-
-FROM Sales.Orders;
+    OrderStatus,
+    ShippedDate
+FROM source.Orders
+WHERE ShippedDate IS NULL;
 
 
 
 
 
-9. NULLIF() কী করে?
-NULLIF(expression1, expression2)
-যদি দুই value equal হয়:
-NULL
-অন্যথায়:
-expression1
-উদাহরণ:
-/* ============================================================================
-   NULLIF() BASIC EXAMPLES
-============================================================================ */
 
+18. NULL + AND
+/* =========================================================
+   Find pending orders without shipping date
+   ========================================================= */
 SELECT
-    NULLIF(10, 10) AS Example1,
-    NULLIF(10, 20) AS Example2,
-    NULLIF(0, 0) AS Example3;
-
-
-Result:
-Example1 = NULL
-Example2 = 10
-Example3 = NULL
+    OrderID,
+    OrderStatus,
+    ShippedDate
+FROM source.Orders
+WHERE OrderStatus = 'Pending'
+  AND ShippedDate IS NULL;
 
 
 
 
 
 
-10. TASK 5 — IS NULL
-/* ============================================================================
-   TASK 5:
-   Find customers whose score is missing.
-============================================================================ */
-
-SELECT
-    *
-
-FROM Sales.Customers
-
-WHERE Score IS NULL;
-
-
-⚠️ ভুল
--- ভুল
-WHERE Score = NULL;
-এটি কাজ করবে না।
-কারণ:
-NULL = NULL
-SQL-এ TRUE নয়।
-
-
-
-
-11. TASK 6 — IS NOT NULL
-/* ============================================================================
-   TASK 6:
-   Find customers who have a score.
-============================================================================ */
-
-SELECT
-    *
-
-FROM Sales.Customers
-
-WHERE Score IS NOT NULL;
-
-
-
-
-
-12. NULL + WHERE
-NULL-এর ক্ষেত্রে তিন-valued logic গুরুত্বপূর্ণ:
-TRUE
-FALSE
-UNKNOWN
-  
-উদাহরণ:
-/* ============================================================================
-   NULL + WHERE
-============================================================================ */
-
+19. NULL + OR
+/* =========================================================
+   Find customers missing either email or phone
+   ========================================================= */
 SELECT
     CustomerID,
-    Score
+    CustomerName,
+    Email,
+    Phone
+FROM source.Customers
+WHERE Email IS NULL
+   OR Phone IS NULL;
 
-FROM Sales.Customers
-
-WHERE Score > 80;
 
 
-Score = NULL হলে:
-NULL > 80
-ফল:
+
+
+
+20. NULL + NOT
+এখানে beginner-রা ভুল করে।
+/* =========================================================
+   Find customers with a non-null email
+   ========================================================= */
+SELECT
+    CustomerID,
+    CustomerName
+FROM source.Customers
+WHERE NOT (Email IS NULL);
+
+Better readable:
+WHERE Email IS NOT NULL
+
+
+
+
+
+🧠 PART 6 — Three-Valued Logic
+SQL-এ শুধু:
+TRUE
+FALSE
+নয়।
+আরও আছে:
 UNKNOWN
-WHERE শুধু TRUE rows রাখে।
-
-
-
-
-
-
-
-13. TASK 7 — LEFT ANTI JOIN
-যেসব customer কোনো order করেনি তাদের বের করতে:
-/* ============================================================================
-   TASK 7:
-   LEFT ANTI JOIN
-
-   Find customers who have NOT placed any orders.
-============================================================================ */
-
+Example
+/* =========================================================
+   Demonstrate NULL comparison
+   ========================================================= */
 SELECT
-    c.*,
-    o.OrderID
+    CASE
+        WHEN NULL = NULL THEN 'TRUE'
+        ELSE 'FALSE OR UNKNOWN'
+    END AS Result;
 
-FROM Sales.Customers AS c
-
-LEFT JOIN Sales.Orders AS o
-    ON c.CustomerID = o.CustomerID
-
-WHERE o.CustomerID IS NULL;
-
-
-Logic
-Customers
-    |
-    LEFT JOIN
-    |
-Orders
-    |
-WHERE Orders.CustomerID IS NULL
-অর্থাৎ:
-Customer আছে, কিন্তু matching order নেই।
+SQL-এর logic:
+NULL = NULL
+      ↓
+UNKNOWN
+   
+তাই:
+WHERE Email = NULL
+কাজ করে না।
 
 
 
 
 
-14. LEFT ANTI JOIN — Better Version
-/* ============================================================================
-   BEST PRACTICE:
-   NOT EXISTS is often clearer for anti-join logic.
-============================================================================ */
-
+🔥 PART 7 — NULL + Arithmetic
+NULL-এর সাথে arithmetic করলে result সাধারণত NULL হয়।
+/* =========================================================
+   Demonstrate NULL arithmetic
+   ========================================================= */
 SELECT
-    c.*
+    100 + NULL AS Result1,
+    100 - NULL AS Result2,
+    100 * NULL AS Result3,
+    100 / NULL AS Result4;
 
-FROM Sales.Customers AS c
-
-WHERE NOT EXISTS
-(
-    SELECT 1
-    FROM Sales.Orders AS o
-    WHERE o.CustomerID = c.CustomerID
-);
-
-
-JOIN vs NOT EXISTS
-Method	                 Use
-LEFT JOIN ... IS NULL	   সহজে বোঝা যায়
-NOT EXISTS	             Anti-semi join-এর জন্য excellent
-NOT IN	                 NULL থাকলে dangerous
-
-
-
-
-
-
-
-15. NULL + NOT IN — Dangerous Problem ⚠️
-ধরা যাক আমরা customers খুঁজছি যাদের ID order table-এ নেই।
-/* ============================================================================
-   NULL + NOT IN PROBLEM
-
-   If the subquery contains NULL, NOT IN can produce unexpected results.
-============================================================================ */
-
-SELECT
-    *
-
-FROM Sales.Customers
-
-WHERE CustomerID NOT IN
-(
-    SELECT CustomerID
-    FROM Sales.Orders
-);
-
-
-আমাদের Orders table-এ আছে:
-CustomerID = NULL
-তাই subquery:
-1
-2
-3
-...
-19
+সব result:
 NULL
 
-  
-এখন:
-CustomerID NOT IN (1,2,3,...,19,NULL)
-NULL-এর কারণে comparison UNKNOWN হতে পারে।
-ফলে expected rows নাও পাওয়া যেতে পারে।
 
-
-
-
-
-
-
-16. NOT EXISTS — Recommended
-/* ============================================================================
-   RECOMMENDED SOLUTION
-
-   NOT EXISTS handles NULL safely for this anti-join pattern.
-============================================================================ */
-
+Real Project Example
+/* =========================================================
+   Calculate sales amount safely
+   Quantity or UnitPrice NULL হলে result NULL হবে।
+   তাই business rule অনুযায়ী COALESCE ব্যবহার করছি।
+   ========================================================= */
 SELECT
-    c.*
+    OrderItemID,
+    COALESCE(Quantity, 0) AS Quantity,
+    COALESCE(UnitPrice, 0) AS UnitPrice,
 
-FROM Sales.Customers AS c
+    COALESCE(Quantity, 0)
+    * COALESCE(UnitPrice, 0) AS SalesAmount
+FROM source.OrderItems;
 
-WHERE NOT EXISTS
-(
-    SELECT 1
-    FROM Sales.Orders AS o
-    WHERE o.CustomerID = c.CustomerID
-);
-
-
-⭐ Data Engineering Best Practice
-Anti-join requirement হলে সাধারণত:
-NOT EXISTS
-একটি শক্তিশালী এবং নিরাপদ choice।
+⚠️ তবে মনে রাখবেন:
+Missing price = 0 সব business-এ সঠিক নয়।
+অনেক সময় missing price-কে 0 বানানো data corruption তৈরি করতে পারে।
 
 
 
 
 
-17. NULL + JOIN Behavior
-/* ============================================================================
-   NULL + JOIN
 
-   NULL does not equal NULL in a normal equality JOIN.
-============================================================================ */
-
+🟡 PART 8 — NULL + GROUP BY
+NULL একটি group হিসেবে treated হয়।
+/* =========================================================
+   Group customers by country
+   NULL country becomes one group
+   ========================================================= */
 SELECT
-    c.CustomerID,
-    c.FirstName,
-    o.OrderID,
-    o.CustomerID AS OrderCustomerID
+    Country,
+    COUNT(*) AS CustomerCount
+FROM source.Customers
+GROUP BY Country;
 
-FROM Sales.Customers AS c
 
-LEFT JOIN Sales.Orders AS o
+Result-এ:
+NULL
+একটি আলাদা group হবে।
+
+   
+Better Reporting
+/* =========================================================
+   Display NULL country as Unknown
+   ========================================================= */
+SELECT
+    COALESCE(Country, 'Unknown') AS Country,
+    COUNT(*) AS CustomerCount
+FROM source.Customers
+GROUP BY COALESCE(Country, 'Unknown');
+
+
+
+
+
+
+🟡 PART 9 — NULL + HAVING
+/* =========================================================
+   Find countries with at least 2 customers
+   NULL is also grouped
+   ========================================================= */
+SELECT
+    Country,
+    COUNT(*) AS CustomerCount
+FROM source.Customers
+GROUP BY Country
+HAVING COUNT(*) >= 2;
+
+
+
+
+
+
+🟡 PART 10 — NULL + JOIN
+21. INNER JOIN
+NULL join key সাধারণত match করবে না।
+/* =========================================================
+   Join customers with orders
+   ========================================================= */
+SELECT
+    c.CustomerName,
+    o.OrderID
+FROM source.Customers c
+INNER JOIN source.Orders o
     ON c.CustomerID = o.CustomerID;
 
 
-যেখানে:
-c.CustomerID = NULL
-এবং
-o.CustomerID = NULL
-  
-থাকলেও:
-NULL = NULL
-matching condition হয় না।
 
 
 
-
-18. NULL + GROUP BY
-GROUP BY-তে সব NULL value একটি group হিসেবে আসে।
-/* ============================================================================
-   NULL + GROUP BY
-
-   All NULL scores are grouped together.
-============================================================================ */
-
-SELECT
-    Score,
-    COUNT(*) AS CustomerCount
-
-FROM Sales.Customers
-
-GROUP BY Score
-
-ORDER BY Score;
-
-
-আপনি একটি row পাবেন:
-Score = NULL
-CustomerCount = ...
-
-
-
-
-
-
-19. NULL + COUNT()
-এখানে খুব গুরুত্বপূর্ণ difference আছে।
-/* ============================================================================
-   NULL + COUNT()
-
-   COUNT(*) counts rows.
-   COUNT(Score) counts only non-NULL Score values.
-============================================================================ */
-
-SELECT
-    COUNT(*) AS TotalCustomers,
-
-    COUNT(Score) AS CustomersWithScore,
-
-    COUNT(*) - COUNT(Score) AS CustomersWithoutScore
-
-FROM Sales.Customers;
-
-
-⭐ খুব গুরুত্বপূর্ণ
-COUNT(*)
-→ সব row
-COUNT(Score)
-→ শুধু non-NULL Score
-
-
-
-
-
-
-20. NULL + SUM()
-/* ============================================================================
-   NULL + SUM()
-
-   SUM ignores NULL values.
-============================================================================ */
-
-SELECT
-    SUM(Sales) AS TotalSales,
-
-    SUM(COALESCE(Sales, 0)) AS TotalSales_WithZero
-
-FROM Sales.Orders;
-
-
-দুই result সাধারণত একই হবে।
-কারণ SUM() নিজেই NULL ignore করে।
-
-
-
-
-
-
-
-
-21. NULL + AVG()
-/* ============================================================================
-   NULL + AVG()
-
-   AVG ignores NULL values.
-============================================================================ */
-
-SELECT
-    AVG(Sales) AS AverageSales,
-
-    AVG(COALESCE(Sales, 0)) AS AverageSales_WithZero
-
-FROM Sales.Orders;
-
-
-⚠️ এখানে result আলাদা হতে পারে।
-কারণ:
-AVG(Sales)
-NULL বাদ দেয়।
-  
-কিন্তু:
-AVG(COALESCE(Sales,0))
-NULL-কে 0 হিসেবে গণনা করে।
-
-
-
-
-
-
-
-22. NULL + HAVING
-/* ============================================================================
-   NULL + HAVING
-
-   Find customers whose total sales are greater than 500.
-============================================================================ */
-
-SELECT
-    CustomerID,
-    SUM(Sales) AS TotalSales
-
-FROM Sales.Orders
-
-GROUP BY CustomerID
-
-HAVING SUM(Sales) > 500;
-
-এখানে SUM() NULL values ignore করবে।
-
-
-
-
-
-
-23. CASE + NULL
-/* ============================================================================
-   CASE + NULL
-
-   Categorize customers based on score.
-============================================================================ */
-
-SELECT
-    CustomerID,
-    Score,
-
-    CASE
-        WHEN Score IS NULL THEN 'Not Rated'
-        WHEN Score >= 90 THEN 'Excellent'
-        WHEN Score >= 80 THEN 'Good'
-        WHEN Score >= 70 THEN 'Average'
-        ELSE 'Low'
-    END AS ScoreCategory
-
-FROM Sales.Customers;
-
-
-⭐ Best Practice
-NULL-এর জন্য explicit branch রাখুন:
-WHEN Score IS NULL THEN 'Not Rated'
-এতে business logic পরিষ্কার হয়।
-
-
-
-
-
-24. NULL + CONCAT()
-SQL Server-এর CONCAT() NULL-কে empty string হিসেবে treat করে।
-/* ============================================================================
-   NULL + CONCAT()
-
-   CONCAT safely handles NULL values.
-============================================================================ */
-
-SELECT
-    CustomerID,
-    FirstName,
-    LastName,
-
-    CONCAT(
-        FirstName,
-        ' ',
-        LastName
-    ) AS FullName
-
-FROM Sales.Customers;
-
-
-যদি:
-FirstName = Sarah
-LastName = NULL
-তাহলে:
-Sarah
-পাওয়া যাবে।
-
-
-
-
-
-
-25. NULL + CONCAT_WS()
-CONCAT_WS() separator ব্যবহার করে।
-/* ============================================================================
-   CONCAT_WS()
-
-   WS = With Separator
-============================================================================ */
-
-SELECT
-    CustomerID,
-
-    CONCAT_WS(
-        ' ',
-        FirstName,
-        LastName
-    ) AS FullName
-
-FROM Sales.Customers;
-
-এটি customer full name তৈরিতে খুব useful।
-
-
-
-
-
-
-26. CONCAT বনাম +
-/* ============================================================================
-   STRING CONCATENATION COMPARISON
-============================================================================ */
-
-SELECT
-    CustomerID,
-
-    -- NULL LastName হলে পুরো expression NULL হতে পারে
-    FirstName + ' ' + LastName AS PlusMethod,
-
-    -- NULL safely handled
-    CONCAT(FirstName, ' ', LastName) AS ConcatMethod,
-
-    -- Separator-based concatenation
-    CONCAT_WS(' ', FirstName, LastName) AS ConcatWSMethod
-
-FROM Sales.Customers;
-
-
-
-
-
-
-
-27. NULL + DISTINCT
-DISTINCT-এ multiple NULL একটি unique value হিসেবে গণ্য হয়।
-/* ============================================================================
-   NULL + DISTINCT
-============================================================================ */
-
-SELECT DISTINCT
-    Score
-
-FROM Sales.Customers
-
-ORDER BY Score;
-
-একাধিক customer-এর Score NULL হলেও:
-NULL
-একবারই দেখাবে।
-
-
-
-
-
-
-28. NULL + UNIQUE Constraint
-SQL Server-এ single-column UNIQUE constraint সাধারণভাবে একটি NULL value allow করে।
-Practice:
-/* ============================================================================
-   UNIQUE CONSTRAINT + NULL
-
-   Demonstration table
-============================================================================ */
-
-CREATE TABLE Sales.CustomerEmails
-(
-    CustomerID INT PRIMARY KEY,
-    Email VARCHAR(100) NULL,
-
-    CONSTRAINT UQ_CustomerEmails_Email
-        UNIQUE (Email)
-);
-GO
-/* ============================================================================
-   INSERT DATA
-============================================================================ */
-
-INSERT INTO Sales.CustomerEmails
-VALUES
-(1, 'john@email.com'),
-(2, NULL);
-GO
-
-  
-কিন্তু একই column-এ দ্বিতীয় NULL insert করার সময় SQL Server-এর unique constraint behavior লক্ষ্য করা গুরুত্বপূর্ণ।
-/* ============================================================================
-   TEST
-
-   This demonstrates SQL Server's UNIQUE constraint behavior
-   with NULL values.
-============================================================================ */
-
--- INSERT INTO Sales.CustomerEmails
--- VALUES (3, NULL);
-⭐ Best Practice
-Business rule যদি হয়:
-Email থাকলে unique হতে হবে, কিন্তু NULL multiple rows allowed।
-
-তাহলে Filtered Unique Index বেশি উপযোগী।
-
-
-
-
-
-
-29. Filtered Unique Index + NULL
-/* ============================================================================
-   FILTERED UNIQUE INDEX
-
-   Only non-NULL email values must be unique.
-
-   Multiple NULL values are allowed because NULL rows are excluded.
-============================================================================ */
-
-DROP TABLE Sales.CustomerEmails;
-GO
-
-CREATE TABLE Sales.CustomerEmails
-(
-    CustomerID INT PRIMARY KEY,
-    Email VARCHAR(100) NULL
-);
-GO
-
-CREATE UNIQUE INDEX UX_CustomerEmails_Email
-ON Sales.CustomerEmails(Email)
-WHERE Email IS NOT NULL;
-GO
-এখন:
-/* ============================================================================
-   MULTIPLE NULL VALUES ARE ALLOWED
-============================================================================ */
-
-INSERT INTO Sales.CustomerEmails
-VALUES
-(1, 'john@email.com'),
-(2, NULL),
-(3, NULL),
-(4, 'sarah@email.com');
-GO
-এটি real-world customer table-এ খুব useful pattern।
-
-
-
-
-
-
-30. NULL + Filtered Index
-শুধু non-NULL rows দ্রুত query করার প্রয়োজন হলে:
-/* ============================================================================
-   FILTERED INDEX FOR NON-NULL SCORES
-
-   Useful when queries frequently search only customers
-   who already have a score.
-============================================================================ */
-
-CREATE INDEX IX_Customers_Score_NotNull
-ON Sales.Customers(Score)
-WHERE Score IS NOT NULL;
-GO
-Query:
-/* ============================================================================
-   QUERY USING THE FILTERED INDEX
-============================================================================ */
-
-SELECT
-    CustomerID,
-    Score
-
-FROM Sales.Customers
-
-WHERE Score IS NOT NULL
-  AND Score >= 90;
-
-
-
-
-
-
-31. NULL + Window Function
-এখন customer order history থেকে previous sales বের করি।
-/* ============================================================================
-   NULL + LAG()
-
-   LAG returns the previous order's Sales value.
-
-   For the first order of each customer:
-   PreviousSales = NULL
-============================================================================ */
-
-SELECT
-    CustomerID,
-    OrderID,
-    OrderDate,
-    Sales,
-
-    LAG(Sales) OVER
-    (
-        PARTITION BY CustomerID
-        ORDER BY OrderDate
-    ) AS PreviousSales
-
-FROM Sales.Orders;
-
-
-
-
-
-
-
-
-32. LAG() + NULL Business Logic
-Previous sales না থাকলে:
-NULL
-এটাই logically correct।
-কিন্তু report-এ আমরা চাইলে:
-/* ============================================================================
-   LAG() + COALESCE()
-
-   Replace missing previous sales with 0 for reporting purposes.
-============================================================================ */
-
-SELECT
-    CustomerID,
-    OrderID,
-    OrderDate,
-    Sales,
-
-    LAG(Sales) OVER
-    (
-        PARTITION BY CustomerID
-        ORDER BY OrderDate
-    ) AS PreviousSales,
-
-    COALESCE
-    (
-        LAG(Sales) OVER
-        (
-            PARTITION BY CustomerID
-            ORDER BY OrderDate
-        ),
-        0
-    ) AS PreviousSales_Reporting
-
-FROM Sales.Orders;
-
-⚠️ তবে analytical calculation-এ NULL → 0 করার আগে business meaning যাচাই করতে হবে।
-
-
-
-
-
-
-33. NULL + Sales Growth
-/* ============================================================================
-   BUSINESS ANALYSIS:
-
-   Calculate sales difference from previous order.
-
-   NULL sales should remain NULL because the previous/current
-   sales value is unknown.
-============================================================================ */
-
-SELECT
-    CustomerID,
-    OrderID,
-    OrderDate,
-    Sales,
-
-    LAG(Sales) OVER
-    (
-        PARTITION BY CustomerID
-        ORDER BY OrderDate
-    ) AS PreviousSales,
-
-    Sales
-    -
-    LAG(Sales) OVER
-    (
-        PARTITION BY CustomerID
-        ORDER BY OrderDate
-    ) AS SalesDifference
-
-FROM Sales.Orders;
-
-এখানে NULL arithmetic naturally NULL result দেবে।
-
-
-
-
-
-
-34. NULL + Data Quality — NULL vs Empty String vs Blank Space
-এখন আপনার দেওয়া original example-এর concept real-world order category দিয়ে দেখানো যাক।
-/* ============================================================================
-   TASK 8:
-   Demonstrate the difference between:
-
-   1. NULL
-   2. Empty string ''
-   3. Blank spaces '  '
-
-   DATALENGTH helps us understand the actual stored bytes.
-============================================================================ */
-
-WITH OrderStatus AS
-(
-    SELECT 1 AS ID, 'Completed' AS Status
-    UNION ALL
-    SELECT 2, NULL
-    UNION ALL
-    SELECT 3, ''
-    UNION ALL
-    SELECT 4, '  '
-)
-SELECT
-    ID,
-    Status,
-
-    DATALENGTH(Status) AS DataLength,
-
-    TRIM(Status) AS CleanStatus,
-
-    NULLIF(TRIM(Status), '') AS Policy2,
-
-    COALESCE
-    (
-        NULLIF(TRIM(Status), ''),
-        'Unknown'
-    ) AS Policy3
-
-FROM OrderStatus;
-
-
-
-
-
-35. এই Logic কী করছে?
-সবচেয়ে গুরুত্বপূর্ণ অংশ:
-NULLIF(TRIM(Status), '')
-ধাপে ধাপে:
-Input
-'Completed'
-NULL
-''
-'  '
-TRIM()
-'Completed'
-NULL
-''
-''
-NULLIF(...,'')
-'Completed'
-NULL
-NULL
-NULL
-COALESCE(...,'Unknown')
-Completed
-Unknown
-Unknown
-Unknown
-  
-🎯 অর্থাৎ:
-Empty string এবং blank spaces-কে standardized NULL করা যায়, তারপর reporting-এর সময় Unknown দেখানো যায়।
-
-
-
-
-
-
-
-36. Real Data Cleaning Pattern
-এটি Data Engineering-এর জন্য খুব গুরুত্বপূর্ণ।
-/* ============================================================================
-   DATA CLEANING PATTERN
-
-   Convert:
-       NULL
-       ''
-       '   '
-
-   into:
-       'Unknown'
-============================================================================ */
-
-SELECT
-    CustomerID,
-
-    COALESCE(
-        NULLIF(TRIM(FirstName), ''),
-        'Unknown'
-    ) AS FirstName_Clean,
-
-    COALESCE(
-        NULLIF(TRIM(LastName), ''),
-        'Unknown'
-    ) AS LastName_Clean,
-
-    COALESCE(
-        NULLIF(TRIM(City), ''),
-        'Unknown'
-    ) AS City_Clean,
-
-    COALESCE(
-        NULLIF(TRIM(Country), ''),
-        'Unknown'
-    ) AS Country_Clean
-
-FROM Sales.Customers;
-
-
-
-
-
-
-
-
-37. NULL + Aggregation + Business Logic
-এখন customer-level sales report তৈরি করি।
-/* ============================================================================
-   BUSINESS REPORT:
-
-   Customer-level order count and sales.
-
-   Important:
-   - COUNT(*) counts orders
-   - SUM(Sales) ignores NULL
-   - COALESCE converts NULL total sales to 0
-============================================================================ */
-
+22. LEFT JOIN ... IS NULL
+এটি Anti Join-এর সবচেয়ে common pattern।
+/* =========================================================
+   Find customers who have never placed an order
+   ========================================================= */
 SELECT
     c.CustomerID,
-    c.FirstName,
-    c.LastName,
-
-    COUNT(o.OrderID) AS OrderCount,
-
-    SUM(o.Sales) AS TotalSales,
-
-    COALESCE(
-        SUM(o.Sales),
-        0
-    ) AS TotalSales_Clean
-
-FROM Sales.Customers AS c
-
-LEFT JOIN Sales.Orders AS o
+    c.CustomerName
+FROM source.Customers c
+LEFT JOIN source.Orders o
     ON c.CustomerID = o.CustomerID
+WHERE o.OrderID IS NULL;
 
-GROUP BY
-    c.CustomerID,
-    c.FirstName,
-    c.LastName;
+এটি real Data Analyst interview-এর অত্যন্ত গুরুত্বপূর্ণ pattern।
 
 
 
@@ -1270,772 +669,1128 @@ GROUP BY
 
 
 
-38. NULL + JOIN + Aggregation
-Customer order না থাকলেও customer যেন report-এ থাকে:
-/* ============================================================================
-   LEFT JOIN is important.
-
-   INNER JOIN would remove customers without orders.
-============================================================================ */
-
+23. NOT EXISTS
+Same business problem:
+/* =========================================================
+   Find customers without orders using NOT EXISTS
+   ========================================================= */
 SELECT
     c.CustomerID,
-    c.FirstName,
-
-    COUNT(o.OrderID) AS TotalOrders,
-
-    COALESCE(
-        SUM(o.Sales),
-        0
-    ) AS TotalSales
-
-FROM Sales.Customers AS c
-
-LEFT JOIN Sales.Orders AS o
-    ON c.CustomerID = o.CustomerID
-
-GROUP BY
-    c.CustomerID,
-    c.FirstName;
-
-
-কেন COUNT(o.OrderID)?
-LEFT JOIN-এর unmatched row-এ:
-o.OrderID = NULL
-তাই:
-COUNT(o.OrderID)
-= 0
-এটি:
-COUNT(*)
-এর থেকে আলাদা।
-
-
-
-
-
-
-
-39. COUNT(*) বনাম COUNT(Column)
-/* ============================================================================
-   IMPORTANT COUNT COMPARISON
-============================================================================ */
-
-SELECT
-    COUNT(*) AS CountAllRows,
-
-    COUNT(CustomerID) AS CountCustomerID,
-
-    COUNT(Score) AS CountScores
-
-FROM Sales.Customers;
-
-Rule
-COUNT(*)       → rows
-COUNT(column)  → non-NULL values
-
-
-
-
-
-
-40. NULL + WHERE vs HAVING
-/* ============================================================================
-   WHERE filters rows BEFORE GROUPING.
-   HAVING filters groups AFTER GROUPING.
-============================================================================ */
-
-SELECT
-    CustomerID,
-    SUM(Sales) AS TotalSales
-
-FROM Sales.Orders
-
-WHERE Sales IS NOT NULL
-
-GROUP BY CustomerID
-
-HAVING SUM(Sales) > 300;
-
-
-এখানে:
-WHERE → NULL sales বাদ দেয়
-GROUP BY → customer অনুযায়ী group
-SUM() → sales total
-HAVING → total > 300
-
-
-
-
-
-
-41. NULL Data Profiling
-Data Engineer হিসেবে NULL percentage বের করা খুব গুরুত্বপূর্ণ।
-/* ============================================================================
-   DATA QUALITY CHECK:
-
-   Calculate NULL percentage for Customer Score.
-============================================================================ */
-
-SELECT
-    COUNT(*) AS TotalCustomers,
-
-    COUNT(Score) AS NonNullScores,
-
-    COUNT(*) - COUNT(Score) AS NullScores,
-
-    CAST
-    (
-        100.0 *
-        (COUNT(*) - COUNT(Score))
-        / COUNT(*)
-        AS DECIMAL(5,2)
-    ) AS NullPercentage
-
-FROM Sales.Customers;
-
-এটি production data-quality monitoring-এর খুব common pattern।
-
-
-
-
-
-
-
-42. Multiple Columns-এর NULL Profiling
-/* ============================================================================
-   DATA QUALITY PROFILING
-
-   Check NULL percentage for important customer attributes.
-============================================================================ */
-
-SELECT
-    COUNT(*) AS TotalRows,
-
-    SUM(CASE WHEN Email IS NULL THEN 1 ELSE 0 END) AS NullEmail,
-
-    SUM(CASE WHEN LastName IS NULL THEN 1 ELSE 0 END) AS NullLastName,
-
-    SUM(CASE WHEN City IS NULL THEN 1 ELSE 0 END) AS NullCity,
-
-    SUM(CASE WHEN Score IS NULL THEN 1 ELSE 0 END) AS NullScore
-
-FROM Sales.Customers;
-
-
-
-
-
-43. NULL + CASE + Data Quality Flag
-/* ============================================================================
-   DATA QUALITY FLAG
-
-   Identify customers with missing important information.
-============================================================================ */
-
-SELECT
-    CustomerID,
-    FirstName,
-    LastName,
-    Email,
-    Score,
-
-    CASE
-        WHEN Email IS NULL
-             AND Score IS NULL
-            THEN 'Critical Missing Data'
-
-        WHEN Email IS NULL
-            THEN 'Missing Email'
-
-        WHEN Score IS NULL
-            THEN 'Missing Score'
-
-        ELSE 'Complete'
-
-    END AS DataQualityStatus
-
-FROM Sales.Customers;
-
-
-
-
-
-
-44. NULL + COALESCE + CASE
-/* ============================================================================
-   CUSTOMER SEGMENTATION
-
-   NULL scores are classified separately.
-============================================================================ */
-
-SELECT
-    CustomerID,
-    FirstName,
-    Score,
-
-    CASE
-        WHEN Score IS NULL
-            THEN 'Unrated'
-
-        WHEN Score >= 90
-            THEN 'VIP'
-
-        WHEN Score >= 80
-            THEN 'Regular'
-
-        ELSE 'Low Engagement'
-    END AS CustomerSegment
-
-FROM Sales.Customers;
-
-
-
-
-
-
-
-45. NULL + ORDER BY Business Logic
-/* ============================================================================
-   BUSINESS REPORT:
-
-   VIP/high scores first,
-   NULL scores last.
-============================================================================ */
-
-SELECT
-    CustomerID,
-    FirstName,
-    Score
-
-FROM Sales.Customers
-
-ORDER BY
-    CASE
-        WHEN Score IS NULL THEN 1
-        ELSE 0
-    END,
-
-    Score DESC;
-
-
-
-
-
-
-
-46. NULL + DISTINCT + Data Cleaning
-/* ============================================================================
-   BEFORE CLEANING
-============================================================================ */
-
-SELECT DISTINCT
-    LastName
-
-FROM Sales.Customers;
-তারপর standardized:
-/* ============================================================================
-   AFTER CLEANING
-
-   NULL, empty and whitespace-only values can be standardized.
-============================================================================ */
-
-SELECT DISTINCT
-
-    COALESCE(
-        NULLIF(TRIM(LastName), ''),
-        'Unknown'
-    ) AS CleanLastName
-
-FROM Sales.Customers;
-
-
-
-
-
-
-47. NULL + LEFT JOIN + Missing Dimension
-একটি বাস্তব Data Warehouse scenario:
-/* ============================================================================
-   FIND ORDERS WHERE CUSTOMER INFORMATION IS MISSING
-
-   This is useful as a data-quality check before loading a fact table.
-============================================================================ */
-
-SELECT
-    o.OrderID,
-    o.CustomerID,
-    o.Sales
-
-FROM Sales.Orders AS o
-
-LEFT JOIN Sales.Customers AS c
-    ON o.CustomerID = c.CustomerID
-
-WHERE c.CustomerID IS NULL;
-এখানে OrderID = 1030-এর মতো record পাওয়া যাবে, যেখানে:
-Order exists
-Customer does not exist
-এটি ETL pipeline-এ গুরুত্বপূর্ণ data-quality issue।
-
-
-
-
-
-
-
-48. NULL + COALESCE + Default Dimension
-Data Warehouse-এ অনেক সময় missing customer-এর জন্য Unknown Customer ব্যবহার করা হয়।
-/* ============================================================================
-   DATA WAREHOUSE REPORTING PATTERN
-
-   Missing customer is represented as "Unknown Customer".
-============================================================================ */
-
-SELECT
-    o.OrderID,
-
-    COALESCE(
-        c.FirstName + ' ' + c.LastName,
-        'Unknown Customer'
-    ) AS CustomerName,
-
-    o.Sales
-
-FROM Sales.Orders AS o
-
-LEFT JOIN Sales.Customers AS c
-    ON o.CustomerID = c.CustomerID;
-আরও robust version:
-/* ============================================================================
-   ROBUST VERSION
-
-   CONCAT handles NULL names safely.
-============================================================================ */
-
-SELECT
-    o.OrderID,
-
-    COALESCE(
-        NULLIF(
-            CONCAT_WS(' ', c.FirstName, c.LastName),
-            ''
-        ),
-        'Unknown Customer'
-    ) AS CustomerName,
-
-    o.Sales
-
-FROM Sales.Orders AS o
-
-LEFT JOIN Sales.Customers AS c
-    ON o.CustomerID = c.CustomerID;
-
-
-
-
-
-
-49. NULL + Mathematical Business Calculation
-Average order value:
-/* ============================================================================
-   BUSINESS KPI:
-
-   Average Sales per Unit
-
-   NULLIF prevents division by zero.
-============================================================================ */
-
-SELECT
-    OrderID,
-    Sales,
-    Quantity,
-
-    Sales / NULLIF(Quantity, 0) AS SalesPerUnit
-
-FROM Sales.Orders;
-
-
-
-
-
-
-
-50. NULL + CASE + Division
-/* ============================================================================
-   BUSINESS KPI WITH DATA QUALITY STATUS
-============================================================================ */
-
-SELECT
-    OrderID,
-    Sales,
-    Quantity,
-
-    CASE
-        WHEN Sales IS NULL
-            THEN 'Missing Sales'
-
-        WHEN Quantity IS NULL
-            THEN 'Missing Quantity'
-
-        WHEN Quantity = 0
-            THEN 'Invalid Quantity'
-
-        ELSE 'Valid'
-    END AS DataQualityStatus,
-
-    CASE
-        WHEN Sales IS NULL
-             OR Quantity IS NULL
-             OR Quantity = 0
-            THEN NULL
-
-        ELSE Sales / Quantity
-    END AS UnitPrice
-
-FROM Sales.Orders;
-
-এটি production reporting-এর জন্য খুব পরিষ্কার approach।
-
-
-
-
-
-
-
-51. NULL + NOT EXISTS Data Quality Check
-/* ============================================================================
-   FIND ORDERS WITH INVALID CUSTOMER REFERENCES
-
-   CustomerID NULL অথবা customer table-এ customer নেই।
-============================================================================ */
-
-SELECT
-    o.*
-
-FROM Sales.Orders AS o
-
-WHERE o.CustomerID IS NULL
-
-   OR NOT EXISTS
-   (
-       SELECT 1
-       FROM Sales.Customers AS c
-       WHERE c.CustomerID = o.CustomerID
-   );
-
-
-
-
-
-52. NULL + Window Aggregate
-Window function-এর সাথে NULL behavior:
-/* ============================================================================
-   WINDOW AGGREGATION
-
-   SUM(Sales) OVER() ignores NULL Sales values.
-============================================================================ */
-
-SELECT
-    OrderID,
-    Sales,
-
-    SUM(Sales) OVER () AS TotalSales,
-
-    AVG(Sales) OVER () AS AverageSales
-
-FROM Sales.Orders;
-
-
-
-
-
-
-53. NULL + Running Total
-/* ============================================================================
-   RUNNING TOTAL
-
-   NULL Sales values do not contribute to SUM().
-============================================================================ */
-
-SELECT
-    OrderID,
-    OrderDate,
-    Sales,
-
-    SUM(Sales) OVER
-    (
-        ORDER BY OrderDate, OrderID
-        ROWS BETWEEN UNBOUNDED PRECEDING
-                 AND CURRENT ROW
-    ) AS RunningSales
-
-FROM Sales.Orders;
-
-
-
-
-
-
-54. NULL + LAG + COALESCE + Business Logic
-/* ============================================================================
-   COMPLETE ANALYTICAL EXAMPLE
-
-   Compare current sales with previous order.
-
-   NULL previous sales means there is no previous order.
-============================================================================ */
-
-WITH SalesAnalysis AS
-(
-    SELECT
-        CustomerID,
-        OrderID,
-        OrderDate,
-        Sales,
-
-        LAG(Sales) OVER
-        (
-            PARTITION BY CustomerID
-            ORDER BY OrderDate
-        ) AS PreviousSales
-
-    FROM Sales.Orders
-)
-SELECT
-    CustomerID,
-    OrderID,
-    OrderDate,
-    Sales,
-    PreviousSales,
-
-    CASE
-        WHEN PreviousSales IS NULL
-            THEN 'First Order / No Previous Sales'
-
-        WHEN Sales IS NULL
-            THEN 'Current Sales Missing'
-
-        WHEN Sales > PreviousSales
-            THEN 'Sales Increased'
-
-        WHEN Sales < PreviousSales
-            THEN 'Sales Decreased'
-
-        ELSE 'No Change'
-    END AS SalesTrend
-
-FROM SalesAnalysis;
-
-
-
-
-
-
-
-55. Complete NULL Handling Pipeline
-একটি বাস্তব ETL-style pattern:
-/* ============================================================================
-   END-TO-END NULL HANDLING PATTERN
-
-   Step 1:
-       Detect NULL
-
-   Step 2:
-       Normalize empty strings / spaces
-
-   Step 3:
-       Apply business default
-
-   Step 4:
-       Calculate metrics safely
-
-   Step 5:
-       Create data-quality status
-============================================================================ */
-
-SELECT
-    o.OrderID,
-
-    -- Customer ID
-    COALESCE(
-        CAST(o.CustomerID AS VARCHAR(20)),
-        'Unknown'
-    ) AS CustomerID_Clean,
-
-    -- Sales
-    o.Sales,
-
-    -- Quantity
-    o.Quantity,
-
-    -- Safe Unit Price
-    o.Sales / NULLIF(o.Quantity, 0) AS UnitPrice,
-
-    -- Data Quality
-    CASE
-        WHEN o.CustomerID IS NULL
-            THEN 'Missing Customer'
-
-        WHEN o.Sales IS NULL
-            THEN 'Missing Sales'
-
-        WHEN o.Quantity IS NULL
-            THEN 'Missing Quantity'
-
-        WHEN o.Quantity = 0
-            THEN 'Invalid Quantity'
-
-        ELSE 'Valid'
-    END AS DataQualityStatus
-
-FROM Sales.Orders AS o;
-
-
-
-
-
-
-
-56. Final NULL Handling Cheat Sheet 🧠
-  
-Function / Concept	            কাজ	                            Real-world Use
-COALESCE()	                    প্রথম non-NULL value	              Data cleaning
-ISNULL()	                      NULL replace	SQL                 Server-specific
-NULLIF()	                      equal হলে NULL	                  Division by zero
-IS NULL	                        NULL খোঁজা	                      Missing data
-IS NOT NULL	                    Non-NULL খোঁজা	                  Valid data
-COUNT(*)	                      সব rows	                          Row count
-COUNT(column)	                  Non-NULL values	Data              completeness
-SUM()	                          NULL ignore করে	                  Revenue
-AVG()	                          NULL ignore করে	                  KPI
-GROUP BY	                      NULL এক group	                  Profiling
-HAVING	                        Group filter	                    Aggregation filtering
-CASE	                          NULL business logic	              Segmentation
-CONCAT()	                      NULL-safe concatenation	          Full name
-CONCAT_WS()	                    Separator সহ concatenation	      Address/name
-LAG()	                          Previous row	                    Trend analysis
-LEFT JOIN ... IS NULL	          Anti join	                        Missing relationships
-NOT EXISTS	                    Safe anti join	                  ETL validation
-NOT IN	⚠️                      NULL থাকলে সমস্যা	                Avoid when nullable
-DISTINCT	                      NULL একবার দেখায়	                Deduplication
-Filtered Index	                নির্দিষ্ট rows index	                  Performance
-UNIQUE	                        Duplicate prevent	                Data integrity
-
-
-
-
-
-
-
-
-57. Data Analyst + Data Engineer-এর জন্য সবচেয়ে গুরুত্বপূর্ণ Best Practices ⭐
-🟢 1. NULL আর 0 এক করবেন না
-COALESCE(Score, 0)
-শুধু তখনই ব্যবহার করুন যখন business logic অনুযায়ী:
-NULL = 0
-সত্যি।
-  
-🟢 2. Division করার সময় NULLIF() ব্যবহার করুন
-Sales / NULLIF(Quantity, 0)
-এটি production SQL-এ অত্যন্ত useful।
-  
-🟢 3. Nullable column-এ NOT IN সাবধানে ব্যবহার করুন
-❌ Risky:
-WHERE CustomerID NOT IN
-(
-    SELECT CustomerID
-    FROM Sales.Orders
-)
-  
-✅ Better:
+    c.CustomerName
+FROM source.Customers c
 WHERE NOT EXISTS
 (
     SELECT 1
-    FROM Sales.Orders o
+    FROM source.Orders o
     WHERE o.CustomerID = c.CustomerID
+);
+
+Recommendation
+Anti-match logic-এর জন্য:
+NOT EXISTS ⭐⭐⭐⭐⭐
+LEFT JOIN ... IS NULL ⭐⭐⭐⭐⭐
+দুটিই জানবেন।
+
+
+
+
+
+24. NOT IN + NULL
+এটি SQL-এর সবচেয়ে dangerous NULL traps-এর একটি।
+ধরুন:
+WHERE CustomerID NOT IN (...)
+subquery result-এ যদি NULL আসে, unexpected result হতে পারে।
+Example
+/* =========================================================
+   Demonstration of NOT IN NULL problem
+   ========================================================= */
+SELECT
+    CustomerID,
+    CustomerName
+FROM source.Customers
+WHERE CustomerID NOT IN
+(
+    SELECT CustomerID
+    FROM source.Orders
+);
+
+
+Production-এ safer alternative:
+/* =========================================================
+   Recommended anti-join pattern
+   NOT EXISTS avoids NOT IN + NULL problems
+   ========================================================= */
+SELECT
+    c.CustomerID,
+    c.CustomerName
+FROM source.Customers c
+WHERE NOT EXISTS
+(
+    SELECT 1
+    FROM source.Orders o
+    WHERE o.CustomerID = c.CustomerID
+);
+
+
+
+
+
+🟡 PART 11 — NULL + DISTINCT
+/* =========================================================
+   DISTINCT country values
+   All NULL values appear as one distinct value
+   ========================================================= */
+SELECT DISTINCT
+    Country
+FROM source.Customers;
+
+
+
+
+
+🟡 PART 12 — NULL + ORDER BY
+SQL Server-এ ascending sort-এ NULL সাধারণত প্রথম দিকে আসে।
+/* =========================================================
+   Sort customers by country
+   ========================================================= */
+SELECT
+    CustomerName,
+    Country
+FROM source.Customers
+ORDER BY Country ASC;
+
+
+NULL শেষে চাইলে
+/* =========================================================
+   Put NULL countries at the end
+   ========================================================= */
+SELECT
+    CustomerName,
+    Country
+FROM source.Customers
+ORDER BY
+    CASE
+        WHEN Country IS NULL THEN 1
+        ELSE 0
+    END,
+    Country;
+
+
+
+
+🟡 PART 13 — NULL + Window Functions
+ROW_NUMBER()
+/* =========================================================
+   Rank customers by country
+   NULL country is treated as a value
+   ========================================================= */
+SELECT
+    CustomerID,
+    CustomerName,
+    Country,
+
+    ROW_NUMBER() OVER
+    (
+        PARTITION BY Country
+        ORDER BY CustomerID
+    ) AS RowNum
+
+FROM source.Customers;
+
+
+
+
+
+LAG()
+/* =========================================================
+   Compare customer/order information using LAG
+   ========================================================= */
+SELECT
+    OrderID,
+    CustomerID,
+    OrderDate,
+
+    LAG(OrderDate) OVER
+    (
+        PARTITION BY CustomerID
+        ORDER BY OrderDate
+    ) AS PreviousOrderDate
+
+FROM source.Orders;
+First row-এর previous value naturally NULL হবে।
+
+
+
+
+LEAD()
+/* =========================================================
+   Find next order date
+   ========================================================= */
+SELECT
+    OrderID,
+    CustomerID,
+    OrderDate,
+
+    LEAD(OrderDate) OVER
+    (
+        PARTITION BY CustomerID
+        ORDER BY OrderDate
+    ) AS NextOrderDate
+
+FROM source.Orders;
+
+
+
+
+
+🟡 PART 14 — NULL + Set Operators
+SQL Server-এর set operators:
+UNION
+UNION ALL
+INTERSECT
+EXCEPT
+UNION
+
+   
+/* =========================================================
+   UNION removes duplicate rows
+   ========================================================= */
+SELECT Country
+FROM source.Customers
+WHERE Country IS NOT NULL
+
+UNION
+
+SELECT Country
+FROM source.Customers
+WHERE Country IS NULL;
+
+NULL set operation-এ ordinary value-এর মতো নয়, 
+কিন্তু duplicate handling-এ NULL values একই হিসেবে treated হয়।
+
+
+
+
+
+
+🟡 PART 15 — NULL + PIVOT / UNPIVOT
+PIVOT:
+/* =========================================================
+   Example source dataset for PIVOT
+   ========================================================= */
+SELECT
+    Country,
+    CustomerStatus,
+    COUNT(*) AS CustomerCount
+FROM source.Customers
+GROUP BY Country, CustomerStatus;
+
+
+
+PIVOT:
+/* =========================================================
+   Pivot customer status
+   ========================================================= */
+SELECT
+    Country,
+    [Active],
+    [Inactive]
+FROM
+(
+    SELECT
+        Country,
+        CustomerStatus,
+        CustomerID
+    FROM source.Customers
+) AS src
+PIVOT
+(
+    COUNT(CustomerID)
+    FOR CustomerStatus IN
+    (
+        [Active],
+        [Inactive]
+    )
+) AS p;
+
+NULL category/status হলে PIVOT-এ missing column/value 
+behavior বুঝতে হবে এবং আগে cleansing/business rule প্রয়োগ করা ভালো।
+
+
+
+
+
+
+🔴 PART 16 — Production NULL Handling
+এখান থেকে সবচেয়ে গুরুত্বপূর্ণ Data Engineering অংশ।
+25. NOT NULL
+যে column-এ NULL allowed নয়:
+   
+/* =========================================================
+   Example NOT NULL table
+   ========================================================= */
+CREATE TABLE qa.RequiredCustomer
+(
+    CustomerID INT NOT NULL,
+    CustomerName VARCHAR(100) NOT NULL
+);
+
+
+
+
+
+26. PRIMARY KEY + NULL
+Primary Key:
+NOT NULL
++
+UNIQUE
+   
+অর্থাৎ:
+/* =========================================================
+   Primary Key automatically prevents NULL
+   ========================================================= */
+CREATE TABLE qa.TestPrimaryKey
+(
+    CustomerID INT PRIMARY KEY,
+    CustomerName VARCHAR(100)
+);
+
+
+এখানে:
+CustomerID = NULL
+allowed নয়।
+
+
+
+
+
+
+27. FOREIGN KEY + NULL
+Foreign Key NULL হতে পারে যদি column nullable হয়।
+আমাদের:
+Employees.ManagerID
+Orders.SalesRepID
+Products.CategoryID
+
+   
+এর example।
+/* =========================================================
+   Find employees without a manager
+   Top-level managers naturally have NULL ManagerID
+   ========================================================= */
+SELECT
+    EmployeeID,
+    EmployeeName
+FROM source.Employees
+WHERE ManagerID IS NULL;
+
+
+
+
+
+28. UNIQUE + NULL
+SQL Server-এ UNIQUE constraint এবং NULL-এর behavior বিশেষভাবে বুঝতে হবে।
+/* =========================================================
+   Example UNIQUE constraint
+   ========================================================= */
+CREATE TABLE qa.UniqueEmailTest
+(
+    CustomerID INT PRIMARY KEY,
+    Email VARCHAR(150) NULL,
+
+    CONSTRAINT UQ_UniqueEmail
+        UNIQUE (Email)
+);
+
+Production design-এ email optional 
+হলে unique constraint-এর behavior carefully test করবেন।
+
+
+
+
+
+🔴 PART 17 — NULL + Indexes
+NULL column index করা যায়।
+/* =========================================================
+   Create index on customer email
+   Purpose:
+   Search/filter performance improve করা
+   ========================================================= */
+CREATE INDEX IX_Customers_Email
+ON source.Customers(Email);
+
+কিন্তু NULL search-এর জন্য workload 
+এবং execution plan দেখে index design করবেন।
+
+
+
+
+
+29. Filtered Index
+SQL Server-এর powerful feature।
+/* =========================================================
+   Filtered Index
+   Purpose:
+   Only customers with email maintain করা
+   Useful when NULL rows are numerous
+   ========================================================= */
+CREATE INDEX IX_Customers_Email_NotNull
+ON source.Customers(Email)
+WHERE Email IS NOT NULL;
+
+এটি production-এ useful হতে পারে যখন:
+90% Email NULL
+10% Email populated
+
+
+
+
+
+
+🔴 PART 18 — NULL Profiling
+Data Engineer-এর প্রথম কাজগুলোর একটি:
+Understand how much NULL exists before cleaning it.
+
+30. Customer NULL Profile
+/* =========================================================
+   NULL profiling for Customers
+   Purpose:
+   প্রতিটি important column-এর missing count দেখা
+   ========================================================= */
+SELECT
+    COUNT(*) AS TotalRows,
+
+    SUM(CASE WHEN Email IS NULL THEN 1 ELSE 0 END)
+        AS MissingEmail,
+
+    SUM(CASE WHEN Phone IS NULL THEN 1 ELSE 0 END)
+        AS MissingPhone,
+
+    SUM(CASE WHEN Country IS NULL THEN 1 ELSE 0 END)
+        AS MissingCountry,
+
+    SUM(CASE WHEN DateOfBirth IS NULL THEN 1 ELSE 0 END)
+        AS MissingDOB,
+
+    SUM(CASE WHEN CustomerStatus IS NULL THEN 1 ELSE 0 END)
+        AS MissingStatus
+
+FROM source.Customers;
+
+
+
+
+31. NULL Percentage per Column
+/* =========================================================
+   NULL percentage profiling
+   Purpose:
+   Data quality dashboard-এর জন্য missing percentage
+   ========================================================= */
+SELECT
+    COUNT(*) AS TotalRows,
+
+    CAST(
+        100.0 * SUM(CASE WHEN Email IS NULL THEN 1 ELSE 0 END)
+        / NULLIF(COUNT(*), 0)
+        AS DECIMAL(5,2)
+    ) AS EmailNullPercentage,
+
+    CAST(
+        100.0 * SUM(CASE WHEN Phone IS NULL THEN 1 ELSE 0 END)
+        / NULLIF(COUNT(*), 0)
+        AS DECIMAL(5,2)
+    ) AS PhoneNullPercentage,
+
+    CAST(
+        100.0 * SUM(CASE WHEN Country IS NULL THEN 1 ELSE 0 END)
+        / NULLIF(COUNT(*), 0)
+        AS DECIMAL(5,2)
+    ) AS CountryNullPercentage
+
+FROM source.Customers;
+
+
+
+
+
+🔴 PART 19 — Bronze → Silver NULL Cleansing
+এটাই Data Engineering-এর বাস্তব flow।
+Source
+  ↓
+Bronze
+  ↓
+Silver
+  ↓
+Gold
+
+
+
+
+
+
+
+32. Bronze Table
+Bronze সাধারণত raw data-এর কাছাকাছি থাকে।
+/* =========================================================
+   Bronze Customers
+   Purpose:
+   Source থেকে raw data preserve করা
+   ========================================================= */
+SELECT
+    *
+INTO bronze.Customers
+FROM source.Customers;
+GO
+
+
+
+
+
+33. Silver Cleansing
+/* =========================================================
+   Silver Customers
+   Purpose:
+   Bronze data clean এবং standardized করা
+
+   Business rules:
+   NULL Country → 'Unknown'
+   NULL Status → 'Unknown'
+   Empty/blank values → NULL
+   ========================================================= */
+SELECT
+    CustomerID,
+
+    NULLIF(
+        LTRIM(RTRIM(CustomerName)),
+        ''
+    ) AS CustomerName,
+
+    NULLIF(
+        LTRIM(RTRIM(Email)),
+        ''
+    ) AS Email,
+
+    NULLIF(
+        LTRIM(RTRIM(Phone)),
+        ''
+    ) AS Phone,
+
+    COALESCE(
+        NULLIF(LTRIM(RTRIM(Country)), ''),
+        'Unknown'
+    ) AS Country,
+
+    DateOfBirth,
+
+    COALESCE(
+        NULLIF(LTRIM(RTRIM(CustomerStatus)), ''),
+        'Unknown'
+    ) AS CustomerStatus,
+
+    CreatedDate
+
+INTO silver.Customers
+
+FROM bronze.Customers;
+GO
+
+   
+এখানে আমরা একসাথে ব্যবহার করেছি:
+NULLIF()
+LTRIM()
+RTRIM()
+COALESCE()
+এটাই real ETL transformation।
+
+
+
+
+
+
+🔴 PART 20 — Unknown Member Strategy
+Data Warehouse-এ একটি গুরুত্বপূর্ণ concept।
+ধরুন fact table-এর customer ID পাওয়া গেল না।
+তখন সবসময় NULL রাখা ভালো নয়।
+একটি Unknown Member রাখা যায়:
+CustomerKey = 0
+CustomerName = 'Unknown Customer'
+
+
+
+
+
+34. Gold Dimension
+/* =========================================================
+   Gold Customer Dimension
+   Purpose:
+   Analytics / Power BI-এর জন্য dimension তৈরি করা
+
+   Unknown member = 0
+   ========================================================= */
+CREATE TABLE gold.dim_customer
+(
+    CustomerKey INT PRIMARY KEY,
+    CustomerID INT NULL,
+    CustomerName VARCHAR(100) NOT NULL,
+    Email VARCHAR(150) NULL,
+    Country VARCHAR(50) NOT NULL
+);
+
+
+GO
+/* =========================================================
+   Insert Unknown Member
+   Purpose:
+   Missing dimension relationship handle করা
+   ========================================================= */
+INSERT INTO gold.dim_customer
+(
+    CustomerKey,
+    CustomerID,
+    CustomerName,
+    Email,
+    Country
 )
-  
-🟢 4. String cleaning-এ এই pattern মনে রাখুন
-COALESCE(
-    NULLIF(TRIM(ColumnName), ''),
+VALUES
+(
+    0,
+    NULL,
+    'Unknown Customer',
+    NULL,
     'Unknown'
-)
-এটি:
-NULL
-''
-'   '
-কে standardize করতে খুব useful।
-  
-🟢 5. COUNT-এর difference মনে রাখুন
-COUNT(*)
-→ সব rows
-COUNT(Column)
-→ শুধু non-NULL values
-  
-🟢 6. Aggregation-এর আগে business meaning বুঝুন
-AVG(Score)
-এবং:
-AVG(COALESCE(Score, 0))
-একই query নয়।
-প্রথমটি:
-Missing score বাদ দেয়।
+);
+GO
 
-দ্বিতীয়টি:
-Missing score-কে zero ধরে।
 
-  
-🟢 7. Data Warehouse-এ NULL handling আলাদা করে design করুন
-Bronze:
-Raw NULL
-Silver:
-Clean / Standardized NULL
-Gold:
-Business-friendly Unknown / Default
+
+
+
+🔴 PART 21 — Data Quality Checks
+NULL quality check production pipeline-এর অংশ হওয়া উচিত।
+35. Required Email Check
+ধরা যাক business rule:
+Active customer-এর Email থাকতে হবে।
+
+/* =========================================================
+   Data Quality Check
+   Rule:
+   Active customers must have email
+   ========================================================= */
+SELECT
+    CustomerID,
+    CustomerName,
+    Email,
+    CustomerStatus
+FROM source.Customers
+WHERE CustomerStatus = 'Active'
+  AND Email IS NULL;
+
+এগুলো হলো DQ failures।
+
+
+
+
+
+
+36. Required Product Price
+/* =========================================================
+   Data Quality Check
+   Rule:
+   Active products must have price
+   ========================================================= */
+SELECT
+    ProductID,
+    ProductName,
+    UnitPrice
+FROM source.Products
+WHERE ProductStatus = 'Active'
+  AND UnitPrice IS NULL;
+
+
+
+
+
+
+37. NULL Reconciliation
+Bronze এবং Silver-এ NULL কত ছিল compare করা।
+/* =========================================================
+   NULL Reconciliation
+   Purpose:
+   Bronze বনাম Silver transformation validate করা
+   ========================================================= */
+SELECT
+    'Bronze' AS Layer,
+    COUNT(*) AS TotalRows,
+    SUM(CASE WHEN Country IS NULL THEN 1 ELSE 0 END)
+        AS NullCountry
+FROM bronze.Customers
+
+UNION ALL
+
+SELECT
+    'Silver',
+    COUNT(*),
+    SUM(CASE WHEN Country IS NULL THEN 1 ELSE 0 END)
+FROM silver.Customers;
+
+
+এখানে expected:
+Bronze Country NULL > 0
+Silver Country NULL = 0
+যদি business rule অনুযায়ী Unknown ব্যবহার করা হয়।
+
+
+
+
+
+
+🔴 PART 22 — Incremental Load + NULL
+Incremental ETL-এ একটি common problem:
+LastModifiedDate = NULL
+   
+তখন:
+WHERE LastModifiedDate > @LastLoadDate
+NULL rows select করবে না।
+
+
+   
+Safer business logic
+/* =========================================================
+   Incremental extraction with NULL handling
+   Purpose:
+   Missing LastModifiedDate rows বাদ না দেওয়া
+   ========================================================= */
+DECLARE @LastLoadDate DATETIME = '2026-02-01';
+
+SELECT
+    *
+FROM source.Customers
+WHERE
+    CreatedDate > CAST(@LastLoadDate AS DATE)
+    OR CreatedDate IS NULL;
+
+তবে এখানে CreatedDate যদি mandatory হয়, NULL check unnecessary।
+Best practice: Incremental watermark column ideally NOT NULL হওয়া উচিত।
+
+
+
+
+
+
+
+🔴 PART 23 — Fact / Dimension + NULL
+Data Warehouse-এ সবচেয়ে গুরুত্বপূর্ণ design principle:
+   
+Dimension
+Customer
+Product
+Employee
+Date
+
+   
+Fact
+Sales
+Orders
+Payments
+
+   
+Fact table-এ foreign key ideally unknown member-এ point করবে।
+   
+Example:
+CustomerKey
+    ↓
+0 = Unknown Customer
+
+   
+NULL foreign key-এর পরিবর্তে:
+0 → Unknown
+অনেক dimensional warehouse-এ বেশি useful।
+
+
+
+
+
+
+🧠 PART 24 — Real Sales Analysis
+এখন আমাদের তৈরি data দিয়ে real business report বানাই।
+Total Sales
+/* =========================================================
+   Calculate total sales
+   NULL Quantity / UnitPrice treated according to
+   business rule as zero for this analytical example
+   ========================================================= */
+SELECT
+    SUM(
+        COALESCE(Quantity, 0)
+        * COALESCE(UnitPrice, 0)
+    ) AS TotalSales
+FROM source.OrderItems;
+
+
+Average Order Item Price
+/* =========================================================
+   Average unit price
+   NULL prices are ignored
+   ========================================================= */
+
+SELECT
+    AVG(UnitPrice) AS AverageUnitPrice
+FROM source.OrderItems;
+
+
+
+Missing Price Products
+/* =========================================================
+   Find products with missing prices
+   ========================================================= */
+SELECT
+    ProductID,
+    ProductName
+FROM source.Products
+WHERE UnitPrice IS NULL;
+
+
+
+Customers Without Contact
+/* =========================================================
+   Find customers with no email and no phone
+   ========================================================= */
+SELECT
+    CustomerID,
+    CustomerName
+FROM source.Customers
+WHERE Email IS NULL
+  AND Phone IS NULL;
+
+
+
+Orders Not Delivered
+/* =========================================================
+   Find orders without delivered date
+   ========================================================= */
+SELECT
+    OrderID,
+    OrderStatus,
+    DeliveredDate
+FROM source.Orders
+WHERE DeliveredDate IS NULL;
+
+
+
+Payment Missing Information
+/* =========================================================
+   Find payments with incomplete information
+   ========================================================= */
+SELECT
+    PaymentID,
+    OrderID,
+    PaymentDate,
+    PaymentMethod,
+    Amount,
+    PaymentStatus
+FROM source.Payments
+WHERE PaymentDate IS NULL
+   OR PaymentMethod IS NULL
+   OR Amount IS NULL
+   OR PaymentStatus IS NULL;
+
+
+
+
+
+PART 25 — NULL Data Quality Dashboard Query
+এটি portfolio/project-এর জন্য অত্যন্ত ভালো query।
+/* =========================================================
+   Customer Data Quality Dashboard
+   Purpose:
+   NULL/missing data monitoring
+   ========================================================= */
+SELECT
+    COUNT(*) AS TotalCustomers,
+
+    COUNT(Email) AS ValidEmailRows,
+
+    COUNT(Phone) AS ValidPhoneRows,
+
+    COUNT(Country) AS ValidCountryRows,
+
+    SUM(CASE WHEN Email IS NULL THEN 1 ELSE 0 END)
+        AS MissingEmail,
+
+    SUM(CASE WHEN Phone IS NULL THEN 1 ELSE 0 END)
+        AS MissingPhone,
+
+    SUM(CASE WHEN Country IS NULL THEN 1 ELSE 0 END)
+        AS MissingCountry,
+
+    CAST(
+        100.0 *
+        SUM(CASE WHEN Email IS NULL THEN 1 ELSE 0 END)
+        / NULLIF(COUNT(*), 0)
+        AS DECIMAL(5,2)
+    ) AS EmailNullPercentage
+
+FROM source.Customers;
+
+
+
+
+
+
+PART 26 — NULL Handling Decision Framework
+Production-এ NULL দেখলেই ISNULL(column, 0) করবেন না।
+প্রথমে প্রশ্ন করবেন:
+
+   
+1️⃣ NULL কেন?
+Missing?
+Unknown?
+Not Applicable?
+Not Yet Available?
+Data Error?
+
+   
+2️⃣ Business meaning কী?
 উদাহরণ:
-Bronze:
-LastName = NULL
+ShippedDate NULL
+এর মানে:
+Order shipped হয়নি
 
-        ↓
+কিন্তু:
+UnitPrice NULL
+এর মানে:
+Price missing
 
-Silver:
-LastName = NULL
-
-        ↓
-
-Gold:
-LastName = 'Unknown'
-এতে raw data হারিয়ে যায় না এবং reporting layer business-friendly থাকে।
+দুটো NULL হলেও meaning সম্পূর্ণ আলাদা।
 
 
 
 
 
 
-🎯 এই অধ্যায়ের Core SQL Pattern
-সবচেয়ে বেশি মনে রাখার মতো ৮টি pattern:
--- 1. Replace NULL
-COALESCE(ColumnName, DefaultValue)
+🎯 NULL Handling Strategy
+   
+Scenario	                                     Recommended
+Missing numeric but business says zero	       COALESCE(x,0)
+Missing text for reporting	                   COALESCE(x,'Unknown')
+Multiple fallback	                            COALESCE()
+Simple SQL Server replacement	                ISNULL()
+Zero should become NULL	                      NULLIF()
+Detect NULL	                                  IS NULL
+Detect populated	                            IS NOT NULL
+Conditional handling	                         CASE
+Anti join	                                  NOT EXISTS
+Missing relationship	                         Unknown Member
+Data profiling	                               COUNT, SUM(CASE...)
+Divide by zero	                               NULLIF()
 
--- 2. SQL Server NULL replacement
-ISNULL(ColumnName, DefaultValue)
 
--- 3. Prevent division by zero
-Numerator / NULLIF(Denominator, 0)
 
--- 4. Find NULL
-WHERE ColumnName IS NULL
+PART 27 — Most Important NULL Interview Traps
+Trap 1
+WHERE Email = NULL
+   
+❌ Wrong
+WHERE Email IS NULL
+   
+✅ Correct
 
--- 5. Find non-NULL
-WHERE ColumnName IS NOT NULL
+   
+Trap 2
+COUNT(*)
+সব rows count করে।
+COUNT(Email)
+শুধু non-NULL Email count করে।
 
--- 6. Clean empty/blank strings
-NULLIF(TRIM(ColumnName), '')
+   
+Trap 3
+SUM(Amount)
+NULL values ignore করে।
 
--- 7. Safe anti-join
-WHERE NOT EXISTS (...)
+   
+Trap 4
+AVG(Amount)
+NULL values ignore করে।
 
--- 8. NULL-safe string concatenation
-CONCAT_WS(' ', FirstName, LastName)
+   
+Trap 5
+NULL + 100
+Result:
+NULL
+
+   
+Trap 6
+NOT IN
+Subquery-তে NULL থাকলে dangerous হতে পারে।
+Production-এ অনেক ক্ষেত্রে:
+NOT EXISTS
+prefer করা হয়।
+
+   
+Trap 7
+ISNULL()
+SQL Server-specific।
+COALESCE()
+Standard SQL এবং multiple fallback support করে।
+
+
+
+
+
+
+
+PART 28 — Complete Real Project Challenge
+এখন নিজের হাতে এই requirements solve করবেন।
+
+   
+Challenge 01 — Customer Data Quality
+Find:
+- Total customers
+- Customers with email
+- Customers without email
+- Email NULL %
+- Customers with phone
+- Customers without phone
+- Customers without both email and phone
+
+   
+Challenge 02 — Product Quality
+Find:
+- Products without price
+- Products without discount
+- Products without stock
+- Products with all three missing
+- Active products with missing price
+
+
+Challenge 03 — Order Operations
+Find:
+- Pending orders
+- Orders not shipped
+- Orders not delivered
+- Orders without SalesRep
+- Orders with missing status
+
+   
+Challenge 04 — Payment Quality
+Find:
+- Payments without payment date
+- Payments without method
+- Payments without amount
+- Payments with incomplete payment information
+
+   
+Challenge 05 — Customer Contact
+Create:
+CustomerName
+Email
+Phone
+PreferredContact
+Rules:
+Email available → Email
+Email missing + Phone available → Phone
+Both missing → No Contact
+
+
+
+
+
+PART 29 — Advanced Combined Query
+এখানে অনেক NULL concepts একসাথে ব্যবহার করছি।
+/* =========================================================
+   Advanced Customer Contact Quality Report
+
+   Concepts:
+   COALESCE
+   CASE
+   COUNT
+   NULL handling
+   GROUP BY
+   ========================================================= */
+SELECT
+    COALESCE(Country, 'Unknown') AS Country,
+
+    COUNT(*) AS TotalCustomers,
+
+    COUNT(Email) AS CustomersWithEmail,
+
+    COUNT(Phone) AS CustomersWithPhone,
+
+    SUM(
+        CASE
+            WHEN Email IS NULL
+             AND Phone IS NULL
+            THEN 1
+            ELSE 0
+        END
+    ) AS NoContactCustomers
+
+FROM source.Customers
+
+GROUP BY
+    COALESCE(Country, 'Unknown')
+
+ORDER BY
+    TotalCustomers DESC;
+এটি একটি real analytical report-এর মতো query।
+
+
+
+
+
+
+PART 30 — Recommended Production Architecture
+NULL handling-কে এভাবে ভাববেন:
+                  SOURCE
+                     │
+                     ▼
+              ┌─────────────┐
+              │   BRONZE    │
+              │ Raw NULL    │
+              │ preserved   │
+              └──────┬──────┘
+                     │
+                     ▼
+              ┌─────────────┐
+              │   SILVER    │
+              │ Clean NULL  │
+              │ Standardize │
+              └──────┬──────┘
+                     │
+                     ▼
+              ┌─────────────┐
+              │    GOLD     │
+              │ Business    │
+              │ Rules       │
+              └──────┬──────┘
+                     │
+                     ▼
+              ┌─────────────┐
+              │ Power BI /  │
+              │ Analytics   │
+              └─────────────┘
+
+
+
+
+
+
+NULL-এর ক্ষেত্রে Golden Rules
+- 🔹 Meaning first: NULL-এর business meaning না বুঝে replace করবেন না।
+- 🔹 Raw preserve: Bronze layer-এ original NULL preserve করা ভালো।
+- 🔹 Clean carefully: Silver layer-এ business rule অনুযায়ী cleansing করুন।
+- 🔹 Unknown member: Dimension relationship missing হলে অনেক ক্ষেত্রে 0 = Unknown ব্যবহার করুন।
+- 🔹 COUNT: COUNT(*) এবং COUNT(column)-এর পার্থক্য অবশ্যই জানুন।
+- 🔹 Anti join: NOT IN + NULL-এর trap এড়াতে NOT EXISTS খুব গুরুত্বপূর্ণ।
+- 🔹 Aggregates: SUM/AVG/MIN/MAX NULL কীভাবে handle করে জানুন।
+- 🔹 Arithmetic: NULL arithmetic result সাধারণত NULL।
+- 🔹 Profiling: Production ETL-এর আগে NULL percentage measure করুন।
+- 🔹 Constraints: যেসব field অবশ্যই থাকতে হবে সেগুলো NOT NULL করুন।
+- 🔹 Index: High-NULL column-এ workload অনুযায়ী filtered index বিবেচনা করুন।
+- 🔹 DQ: NULL checks-কে ETL/Data Quality pipeline-এর অংশ করুন।
+- 🔹 Don't blindly zero: Missing price = 0 করা সবসময় correct নয়।
+- 🔹 Document: কোন NULL → 0, Unknown, বা NULL-ই থাকবে—business rule document করুন।
+
 
 
 
