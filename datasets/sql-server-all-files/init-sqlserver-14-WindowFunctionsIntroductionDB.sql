@@ -170,14 +170,23 @@ CREATE TABLE sales.Sales
 );
 GO
 
+
+
 -- ============================================================
--- Sales Transaction Data
+-- Corrected Sales Transaction Data
 -- উদ্দেশ্য:
--- একই customer-এর multiple orders,
--- একই date-এর multiple sales,
--- বিভিন্ন store/category-তে sales তৈরি করা
+-- sales.Sales table-এ 8টি column-এর জন্য প্রতিটি row-তে
+-- ঠিক 8টি value নিশ্চিত করা।
 --
--- এগুলো Window Function practice করার জন্য গুরুত্বপূর্ণ।
+-- Column order:
+-- 1. SalesID
+-- 2. SalesDate
+-- 3. CustomerID
+-- 4. ProductID
+-- 5. StoreID
+-- 6. Quantity
+-- 7. UnitPrice
+-- 8. DiscountAmount
 -- ============================================================
 
 INSERT INTO sales.Sales
@@ -200,7 +209,16 @@ VALUES
 (1006, '2026-01-18', 105, 7, 3, 1, 420, 40),
 (1007, '2026-01-20', 106, 8, 2, 2, 120, 20),
 (1008, '2026-01-22', 107, 5, 4, 3, 45, 5),
-(1009, '2026-01-25', 108, 1, 1, 850, 100),
+
+-- Corrected row:
+-- CustomerID = 108
+-- ProductID = 1
+-- StoreID = 1
+-- Quantity = 1
+-- UnitPrice = 850
+-- Discount = 100
+(1009, '2026-01-25', 108, 1, 1, 1, 850, 100),
+
 (1010, '2026-01-28', 109, 2, 4, 4, 25, 0),
 
 (1011, '2026-02-02', 101, 4, 1, 1, 320, 0),
