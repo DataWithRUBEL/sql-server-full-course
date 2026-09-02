@@ -26,6 +26,8 @@ Business calculations
 
 
 
+    
+
 2. Numeric Data Types
   
 INT
@@ -81,6 +83,8 @@ DECIMAL(12,2) অর্থ
 
 
 
+    
+
 
 4. NUMERIC
 SQL Server-এ NUMERIC এবং DECIMAL practically equivalent।
@@ -100,6 +104,8 @@ Scientific measurement → FLOAT / REAL
 
 
 
+    
+
 5.FLOAT
 Approximate numeric value।
 -- FLOAT is useful for approximate scientific measurements
@@ -116,6 +122,8 @@ Use cases:
 
 
 
+    
+
 
 
 
@@ -125,6 +133,9 @@ REAL হলো lower-precision approximate numeric type।
 DECLARE @RiskScore REAL = 0.123456;
 
 SELECT @RiskScore AS RiskScore;
+
+
+
 
 
 
@@ -196,6 +207,9 @@ FROM analytics.Sales;
 
 
 
+
+
+
 8. ABS() 
 Negative value-এর absolute value।
 -- Convert negative variance into absolute variance
@@ -221,6 +235,8 @@ Use:
 
 
 
+
+    
 
 9. ROUND()
 নির্দিষ্ট decimal position-এ round করে।
@@ -252,6 +268,9 @@ Financial calculation-এর জন্য ROUND প্রয়োজন হতে 
 
 
 
+    
+
+
 10. CEILING()
 উপরের পূর্ণ integer-এ নেয়।
 -- Round a value upward to the next integer
@@ -266,6 +285,9 @@ Warehouse example
 SELECT
     CEILING(CAST(Quantity AS DECIMAL(10,2)) / 10) AS RequiredBoxes
 FROM analytics.Sales;
+
+
+
 
 
 
@@ -298,6 +320,8 @@ FLOOR	           12
 
 
 
+    
+
 
 12. POWER()
 Power/exponent calculation।
@@ -316,6 +340,10 @@ SELECT
 
 
 
+
+
+
+
 13. SQRT()
 Square root।
 -- Calculate square root of a value
@@ -327,6 +355,10 @@ Analytics example
 -- Calculate Euclidean distance component
 SELECT
     SQRT(25 + 144) AS Distance;
+
+
+
+
 
 
 
@@ -363,6 +395,10 @@ FROM analytics.ETL_Source_Sales;
 
 
 
+
+
+
+
 15. RAND()
 Random floating-point value between 0 and 1।
 -- Generate a random number between 0 and 1
@@ -389,6 +425,10 @@ Useful for:
 
 
 
+
+
+    
+
 16. PI()
 π value।
 -- Return the mathematical constant PI
@@ -406,6 +446,9 @@ SELECT
 
 
 
+
+
+
 17. EXP()
 e^x
 -- Calculate exponential growth
@@ -417,6 +460,11 @@ Growth model
 -- Calculate exponential growth factor
 SELECT
     EXP(0.05) AS GrowthFactor;
+
+
+
+
+
 
 
 
@@ -445,6 +493,10 @@ Analytics use
 
 
 
+
+
+
+    
 19. LOG10()
 Base-10 logarithm।
 -- Calculate base-10 logarithm
@@ -455,6 +507,9 @@ Result:
 3
 
 
+
+
+    
 
 
 
@@ -469,6 +524,8 @@ Result ≈
 
 
 
+    
+
 
 21. COS()
 -- Calculate cosine of 60 degrees
@@ -480,6 +537,10 @@ Result ≈
 
 
 
+
+
+    
+
 22. TAN()
 -- Calculate tangent of 45 degrees
 SELECT
@@ -490,6 +551,9 @@ Result ≈
 
 
 
+
+
+    
 
 
 23. ASIN()
@@ -509,6 +573,9 @@ Result:
 
 
 
+    
+
+
 
 24. ACOS()
 Inverse cosine।
@@ -522,6 +589,8 @@ Result:
 
 
 
+    
+
 
 25. ATAN()
 Inverse tangent।
@@ -532,6 +601,8 @@ SELECT
 Result:
 45
 
+
+    
 
 
 
@@ -552,12 +623,17 @@ Real-world use
 
 
 
+    
+
 
 27. COT()
 Cotangent।
 -- Calculate cotangent of 45 degrees
 SELECT
     COT(RADIANS(45)) AS Cotangent45Degrees;
+
+
+
 
 
 
@@ -574,6 +650,9 @@ Result:
 
 
 
+    
+
+
 
 29. RADIANS()
 Degrees → Radians।
@@ -585,6 +664,8 @@ Result ≈
 3.1415926535
 
 
+
+    
 
 
 
@@ -609,6 +690,10 @@ SELECT
 
 
 
+
+
+
+
 31. NULLIF()
 এটি Data Analyst/Data Engineer-এর জন্য অত্যন্ত গুরুত্বপূর্ণ।
 NULLIF(a,b):
@@ -623,6 +708,8 @@ Result:
 NULL
 
 
+
+    
 
 
 
@@ -647,6 +734,8 @@ NULL
 
 
 
+
+    
 
 
 33. Real Margin Calculation 💰
@@ -683,6 +772,9 @@ NULLIF(Revenue, 0)
 
 
 
+    
+
+
 
 
 34. CAST()
@@ -698,6 +790,8 @@ SELECT
     /
     CAST(100 AS DECIMAL(10,2))
     * 100 AS PercentageValue;
+
+
 
 
 
@@ -727,6 +821,9 @@ INNER JOIN analytics.Products AS P
 
 
 
+
+
+
 36. CONVERT() 
 CAST()-এর মতো conversion করে, কিন্তু SQL Server-specific style option দেয়।
 -- Convert a date into VARCHAR using SQL Server style
@@ -749,14 +846,17 @@ FROM analytics.Sales;
 
 
 
+
+
+
 37. CAST vs CONVERT
   
-Feature	                CAST	                   CONVERT
+Feature	                  CAST	                     CONVERT
 ANSI SQL	              ✅	                     ❌ SQL Server-specific
 Data type conversion	  ✅	                     ✅
-Date style	            ❌	                     ✅
-Portability	           ⭐⭐⭐⭐⭐	           ⭐⭐⭐
-SQL Server work	       ⭐⭐⭐⭐⭐	           ⭐⭐⭐⭐⭐
+Date style	              ❌	                     ✅
+Portability	              ⭐⭐⭐⭐⭐	             ⭐⭐⭐
+SQL Server work	          ⭐⭐⭐⭐⭐	             ⭐⭐⭐⭐⭐
 
 
 Practical rule
@@ -767,6 +867,9 @@ SQL Server date formatting/style → CONVERT()
 
 
 
+
+
+    
 
 38. TRY_CAST()
 Bad data হলে error না দিয়ে NULL দেয়।
@@ -810,6 +913,9 @@ FROM analytics.ETL_Source_Sales;
 
 
 
+    
+
+
 40. TRY_CONVERT()
 TRY_CONVERT()-ও invalid conversion হলে NULL দেয়।
 -- Safely convert source price into DECIMAL
@@ -818,6 +924,10 @@ SELECT
     UnitPrice,
     TRY_CONVERT(DECIMAL(12,2), UnitPrice) AS UnitPriceConverted
 FROM analytics.ETL_Source_Sales;
+
+
+
+
 
 
 
@@ -833,6 +943,9 @@ CONVERT	             SQL Server-specific conversion
 
 
 
+
+
+    
 
 
 42. ETL Data Quality Project 🧹
@@ -865,6 +978,10 @@ FROM analytics.ETL_Source_Sales;
 
 
 
+
+
+
+
 43. Negative Values Detect 🔍
 -- Detect negative quantities and negative amounts
 SELECT
@@ -883,6 +1000,9 @@ WHERE
 
 
 
+
+
+
 44. Zero Values Detect
 -- Detect zero quantity or zero amount transactions
 SELECT
@@ -895,6 +1015,8 @@ WHERE
     TRY_CAST(Quantity AS INT) = 0
     OR
     TRY_CAST(SourceAmount AS DECIMAL(14,2)) = 0;
+
+
 
 
 
@@ -941,6 +1063,8 @@ FROM analytics.ETL_Source_Sales;
 
 
 
+    
+
 
 
 
@@ -958,6 +1082,9 @@ WHERE
     AND TRY_CONVERT(INT, Quantity) > 0
     AND TRY_CONVERT(DECIMAL(12,2), UnitPrice) > 0
     AND TRY_CONVERT(DECIMAL(14,2), SourceAmount) >= 0;
+
+
+
 
 
 
@@ -986,6 +1113,9 @@ FROM analytics.Sales;
 
 
 
+
+
+
 48. Discount Calculation 📉
 -- Calculate discount amount for each transaction
 SELECT
@@ -1001,6 +1131,9 @@ SELECT
     ) AS DiscountAmount
 
 FROM analytics.Sales;
+
+
+
 
 
 
@@ -1035,6 +1168,8 @@ FROM analytics.Sales;
 
 
 
+
+
 50. Profit Calculation 📈
 -- Calculate revenue, cost and profit
 SELECT
@@ -1054,6 +1189,10 @@ SELECT
 FROM analytics.Sales AS S
 INNER JOIN analytics.Products AS P
     ON S.ProductID = P.ProductID;
+
+
+
+
 
 
 
@@ -1140,6 +1279,9 @@ INNER JOIN analytics.Products AS P
 
 
 
+
+
+
 52. Target vs Actual 🎯
 -- Compare monthly actual sales against business targets
 WITH MonthlySales AS
@@ -1188,6 +1330,10 @@ SELECT
 FROM MonthlySales AS M
 INNER JOIN analytics.Targets AS T
     ON M.SalesMonth = T.TargetMonth;
+
+
+
+
 
 
 
@@ -1251,6 +1397,9 @@ FROM SalesWithPrevious;
 
 
 
+
+
+
 54. Source vs Calculated Amount Reconciliation 🏗️
 এটি Data Engineering-এর খুব গুরুত্বপূর্ণ বাস্তব কাজ।
 -- Compare source amount against independently calculated amount
@@ -1297,6 +1446,11 @@ WHERE
 
 
 
+
+
+
+
+
 55. Reconciliation Status ✅❌
 -- Classify source records as matched or mismatched
 SELECT
@@ -1332,6 +1486,10 @@ FROM analytics.ETL_Source_Sales;
 
 
 
+
+
+
+    
 
 
 56. Data Quality Dashboard Query 📊
@@ -1383,6 +1541,8 @@ FROM analytics.ETL_Source_Sales;
 
 
 
+
+
 57. সব Functions — Quick Reference
   
 Function	          মূল কাজ	                      Real Business Use
@@ -1419,6 +1579,10 @@ TRY_CONVERT()	      safe conversion	                ETL
 
 
 
+
+    
+
+
 58. Numeric Data Types — Quick Reference
   
 Type	             Category	             Recommended Use
@@ -1448,6 +1612,11 @@ Scientific approximation
 FLOAT / REAL
 
 
+
+
+
+
+    
 
 
 
@@ -1500,6 +1669,8 @@ Power BI
 
 
 
+    
+
 
 
 
@@ -1549,6 +1720,8 @@ SELECT
 ❌ Mistake 5 — ROUND দিয়ে Formatting
 ROUND() calculation-এর জন্য।
 Date/string presentation-এর জন্য ROUND() ব্যবহার করা উচিত নয়।
+
+
 
 
 
