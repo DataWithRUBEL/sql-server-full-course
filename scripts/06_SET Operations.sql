@@ -21,11 +21,12 @@ Result-এর column name প্রথম SELECT থেকে আসবে
   
 
 1. SET OPERATIONS-এর মূল Rules
+  
 Rule 1 — Column Count
 দুই SELECT-এ একই সংখ্যক columns থাকতে হবে।
+  
 ❌ ভুল:
 /* দুই পাশে column সংখ্যা আলাদা */
-
 SELECT
     FirstName,
     LastName,
@@ -38,6 +39,7 @@ SELECT
     FirstName,
     LastName
 FROM Sales.Employees;
+
 
 
 ✅ সঠিক:
@@ -56,10 +58,13 @@ FROM Sales.Employees;
 
 
 
+
+
+
 Rule 2 — Compatible Data Types
 একই position-এর columns-এর data type compatible হওয়া উচিত।
+  
 /* CustomerID এবং EmployeeID উভয়ই INT */
-
 SELECT
     CustomerID,
     LastName
@@ -71,7 +76,6 @@ SELECT
     EmployeeID,
     LastName
 FROM Sales.Employees;
-
 
 এখানে:
 CustomerID  → INT
@@ -85,13 +89,14 @@ LastName    → VARCHAR
 
 
 
+  
 
 
 2. Column Order
 Column-এর position গুরুত্বপূর্ণ।
+  
 /* প্রথম column-এর সাথে প্রথম column
    দ্বিতীয় column-এর সাথে দ্বিতীয় column match করবে */
-
 SELECT
     LastName,
     CustomerID
@@ -129,6 +134,7 @@ SELECT
     EmployeeID,
     LastName
 FROM Sales.Employees;
+
 Result:
 ID
 Last_Name
@@ -143,9 +149,10 @@ Last_Name
 4. Correct Column Meaning
 Data type match করলেই হবে না।
 Business meaning-ও match করতে হবে।
+
+  
 ❌ ভুল design:
 /* FirstName এবং LastName উল্টো হয়ে গেছে */
-
 SELECT
     FirstName,
     LastName
@@ -157,9 +164,13 @@ SELECT
     LastName,
     FirstName
 FROM Sales.Employees;
+
 এতে data technically return করবে, কিন্তু business meaning ভুল হবে। 
 
-  
+
+
+
+
 ✅ সঠিক:
 SELECT
     FirstName,
@@ -181,12 +192,12 @@ FROM Sales.Employees;
 5. UNION
 কাজ
 UNION দুই বা তার বেশি result set combine করে এবং duplicate remove করে।
+  
 /* ==============================================================================
    UNION
    Customers এবং Employees-এর নাম একত্রে আনা
    Duplicate নাম remove হবে
    ============================================================================== */
-
 SELECT
     FirstName,
     LastName
@@ -198,6 +209,8 @@ SELECT
     FirstName,
     LastName
 FROM Sales.Employees;
+
+
 এখানে:
 Customer
    +
@@ -206,9 +219,10 @@ Employee
 UNION
    ↓
 Duplicate Removed
+
+
 Real Business Use
 /* Customer এবং Employee উভয় তালিকায় থাকা unique people */
-
 SELECT
     FirstName,
     LastName
@@ -220,6 +234,8 @@ SELECT
     FirstName,
     LastName
 FROM Sales.Employees;
+
+
 📊 ব্যবহার হতে পারে:
 👥 People List: সব customer + employee
 📧 Contact List: combined contact population
@@ -231,15 +247,17 @@ FROM Sales.Employees;
 
 
 
+  
+
 6. UNION ALL
 কাজ
 UNION ALL duplicate remove করে না।
+  
 /* ==============================================================================
    UNION ALL
    সব records রাখবে
    Duplicate থাকলেও remove করবে না
    ============================================================================== */
-
 SELECT
     FirstName,
     LastName
@@ -251,6 +269,7 @@ SELECT
     FirstName,
     LastName
 FROM Sales.Employees;
+
 
 যেমন John Smith দুই জায়গায় থাকলে:
 John Smith
@@ -278,7 +297,6 @@ Reporting	               Unique list	            Full data
 
 Best Practice
 /* Duplicate দরকার নেই */
-
 SELECT FirstName, LastName
 FROM Sales.Customers
 
@@ -288,9 +306,9 @@ SELECT FirstName, LastName
 FROM Sales.Employees;
 
 
+
 আর data warehouse / ETL-এ যখন প্রতিটি source record রাখতে হবে:
 /* সমস্ত source record preserve করা হচ্ছে */
-
 SELECT FirstName, LastName
 FROM Sales.Customers
 
@@ -298,6 +316,8 @@ UNION ALL
 
 SELECT FirstName, LastName
 FROM Sales.Employees;
+
+
 
 
 
@@ -315,11 +335,11 @@ B-এর matching data
    ↓
 A-তে আছে কিন্তু B-তে নেই
 Employees যারা Customers নয়
+  
 /* ==============================================================================
    EXCEPT
    Employees-এর মধ্যে যারা Customer নয়
    ============================================================================== */
-
 SELECT
     FirstName,
     LastName
@@ -339,9 +359,11 @@ Employees
 Customers
    =
 Employees who are NOT Customers
+
+
+  
 Data Quality Use
 /* Employee master এবং customer master-এর মধ্যে unmatched people খুঁজে বের করা */
-
 SELECT
     FirstName,
     LastName
@@ -372,11 +394,11 @@ B
 ↓
 Common Records
 Employees যারা Customers-ও
+  
 /* ==============================================================================
    INTERSECT
    Employees এবং Customers-এর common people
    ============================================================================== */
-
 SELECT
     FirstName,
     LastName
@@ -388,7 +410,6 @@ SELECT
     FirstName,
     LastName
 FROM Sales.Customers;
-
 
 Result-এর মধ্যে যেমন থাকতে পারে:
 John Smith
@@ -396,9 +417,11 @@ Sarah Wilson
 Robert Miller
 Emma Davis
 Daniel Moore
+
+
+  
 Business Use
 /* একই ব্যক্তি Employee এবং Customer দুই role-এ আছে কিনা */
-
 SELECT
     FirstName,
     LastName
@@ -410,6 +433,8 @@ SELECT
     FirstName,
     LastName
 FROM Sales.Customers;
+
+
 
 
 
@@ -418,11 +443,11 @@ FROM Sales.Customers;
 
 10. UNION — Orders + Archive
 এটি Data Engineering-এ খুব গুরুত্বপূর্ণ pattern।
+  
 /* ==============================================================================
    CURRENT ORDERS + ARCHIVED ORDERS
    Duplicate records remove করবে
    ============================================================================== */
-
 SELECT
     OrderID,
     ProductID,
@@ -457,15 +482,16 @@ FROM Sales.OrdersArchive;
 
 
 
+  
 
 
 11. UNION ALL — Orders + Archive
 ETL-এর ক্ষেত্রে সাধারণত UNION ALL বেশি practical।
+  
 /* ==============================================================================
    CURRENT + ARCHIVE
    সমস্ত records preserve করা হচ্ছে
    ============================================================================== */
-
 SELECT
     OrderID,
     ProductID,
@@ -510,14 +536,16 @@ Complete Order Dataset
 
 
 
+  
+
 
 12. SourceTable যোগ করা
 কোন source থেকে data এসেছে সেটিও রাখা যায়।
+  
 /* ==============================================================================
    SOURCE TRACKING
    কোন table থেকে record এসেছে তা identify করা
    ============================================================================== */
-
 SELECT
     'Current Orders' AS SourceTable,
     OrderID,
@@ -538,18 +566,32 @@ FROM Sales.OrdersArchive
 
 ORDER BY OrderID;
 
+Result:
+SourceTable       OrderID    CustomerID    Sales
+------------------------------------------------
+Orders Archive     9001        6           20
+Orders Archive     9002        7           45
+Orders Archive     9003        1          100
+Orders Archive     9004        8           50
+Current Orders     1001        1           20
+Current Orders     1002        2           45
+...
+এটি Data Lineage বুঝতে সাহায্য করে।
 
 
 
 
 
+
+
+  
 13. EXCEPT দিয়ে Order Reconciliation
 ধরা যাক current এবং archive table-এর মধ্যে একই order আছে কিনা check করতে চাই।
+  
 /* ==============================================================================
    CURRENT ORDERS বনাম ARCHIVE ORDERS
    Archive-এ নেই এমন current orders
    ============================================================================== */
-
 SELECT
     OrderID
 FROM Sales.Orders
@@ -565,15 +607,16 @@ Business question:
 
 
 
+  
 
 
 
 
 14. INTERSECT দিয়ে Common Orders
+  
 /* ==============================================================================
    CURRENT এবং ARCHIVE উভয় table-এ থাকা OrderID
    ============================================================================== */
-
 SELECT
     OrderID
 FROM Sales.Orders
@@ -597,10 +640,10 @@ FROM Sales.OrdersArchive;
 
 15. UNION + ORDER BY
 ORDER BY সাধারণত পুরো combined result-এর শেষে দেওয়া হয়।
+  
 /* ==============================================================================
    COMBINED CUSTOMER + EMPLOYEE LIST
    ============================================================================== */
-
 SELECT
     FirstName,
     LastName
@@ -622,12 +665,14 @@ ORDER BY
 
 
 
+
+
 16. Real Analytics Example
 Customer এবং Employee দুই জায়গায় থাকা people বের করা:
+  
 /* ==============================================================================
    CUSTOMER + EMPLOYEE OVERLAP
    ============================================================================== */
-
 SELECT
     FirstName,
     LastName
@@ -650,7 +695,6 @@ Employees কিন্তু customers নয়:
 /* ==============================================================================
    EMPLOYEES WHO ARE NOT CUSTOMERS
    ============================================================================== */
-
 SELECT
     FirstName,
     LastName
@@ -666,6 +710,7 @@ FROM Sales.Customers
 ORDER BY
     LastName,
     FirstName;
+
 
 
 
@@ -673,7 +718,6 @@ Customers কিন্তু employees নয়:
 /* ==============================================================================
    CUSTOMERS WHO ARE NOT EMPLOYEES
    ============================================================================== */
-
 SELECT
     FirstName,
     LastName
@@ -697,13 +741,12 @@ ORDER BY
 
 
 
-
-17. চারটি SET Operation একসাথে
+17. চারটি SET Operation একসাথে 
+  
 /* ==============================================================================
    UNION
    দুই dataset-এর unique records
    ============================================================================== */
-
 SELECT FirstName, LastName
 FROM Sales.Customers
 
@@ -717,7 +760,6 @@ FROM Sales.Employees;
    UNION ALL
    দুই dataset-এর সব records
    ============================================================================== */
-
 SELECT FirstName, LastName
 FROM Sales.Customers
 
@@ -727,11 +769,12 @@ SELECT FirstName, LastName
 FROM Sales.Employees;
 
 
+
+
 /* ==============================================================================
    EXCEPT
    Employees যারা Customers নয়
    ============================================================================== */
-
 SELECT FirstName, LastName
 FROM Sales.Employees
 
@@ -741,11 +784,11 @@ SELECT FirstName, LastName
 FROM Sales.Customers;
 
 
+
 /* ==============================================================================
    INTERSECT
    Employees যারা Customers-ও
    ============================================================================== */
-
 SELECT FirstName, LastName
 FROM Sales.Employees
 
@@ -798,12 +841,16 @@ SET Operations-এর Mental Model
 
 
 
+  
+
 
 
 
 More Practice
+  
 1. UNION — Duplicate বাদ দিয়ে Combine
 - 🔹 কাজ: দুইটি query-এর result একত্র করে এবং duplicate row বাদ দেয়।
+  
 /* ============================================================
    UNION
    Customer এবং Employee-এর নাম একসাথে দেখানো
@@ -830,6 +877,7 @@ UNION করলে:
 John Smith
 Sarah Wilson
 একবারই থাকবে।
+  
 কখন ব্যবহার করবেন?
 Customers
    +
@@ -846,10 +894,12 @@ Unique People
 
 
 
+  
 
 
 2. UNION ALL — সব Record রাখা
 - 🔹 কাজ: দুই query-এর সব row combine করে। Duplicate থাকলেও বাদ দেয় না।
+  
 /* ============================================================
    UNION ALL
    Customer এবং Employee-এর সব নাম দেখানো
@@ -874,7 +924,6 @@ John Smith
 দুইবার থাকবে।
 কেন ETL-এ UNION ALL বেশি ব্যবহার হয়?
 
-  
 ধরুন:
 2025 Orders
       +
@@ -905,6 +954,7 @@ SELECT
     OrderDate,
     Sales
 FROM Sales.OrdersArchive;
+
 
 
 
@@ -970,6 +1020,7 @@ Employees who are NOT Customers
 
 
 
+  
 
 
 
@@ -1026,10 +1077,12 @@ Real Business Use
 
 
 
+  
 
 
 5. Columns — একই সংখ্যক Column
 - 🔹 Rule: UNION, UNION ALL, EXCEPT, INTERSECT করার সময় দুই query-তে একই সংখ্যক column থাকতে হবে।
+  
 ❌ ভুল:
 /* ============================================================
    ভুল:
@@ -1056,6 +1109,7 @@ Employees  → 2 columns
 তাই error হবে।
 
   
+  
 ✅ সঠিক:
 /* ============================================================
    সঠিক:
@@ -1072,6 +1126,7 @@ SELECT
     FirstName,
     LastName
 FROM Sales.Employees;
+
 
 
 
@@ -1145,7 +1200,6 @@ LastName position  → FirstName
 /* ============================================================
    একই position-এ একই business meaning
    ============================================================ */
-
 SELECT
     FirstName,
     LastName
@@ -1223,6 +1277,9 @@ ID
 CustomerName
 দ্বিতীয় query-তে alias দিলেও final column name পরিবর্তন হবে না।
 
+
+
+  
 /* ============================================================
    দ্বিতীয় SELECT-এর alias final column name পরিবর্তন করবে না
    ============================================================ */
@@ -1248,6 +1305,8 @@ Best Practice
 
 
 
+  
+
 
 
 10. Performance — UNION বনাম UNION ALL
@@ -1267,6 +1326,8 @@ UNION
 SELECT
     CustomerID
 FROM Sales.Orders;
+
+
 
 
 আর duplicate রাখার প্রয়োজন হলে:
@@ -1295,6 +1356,8 @@ Duplicate বাদ দিতে হবে?
 
 
 
+
+  
 
 
 11. ETL — Current + Archive
@@ -1342,6 +1405,8 @@ Complete Orders Dataset
 
 
 
+  
+
 
 12. ETL — Source Tracking
 - 🔹 কাজ: কোন table/source থেকে record এসেছে তা রাখা।
@@ -1384,6 +1449,7 @@ Record → কোথা থেকে এসেছে?
 
 
 
+  
 
 
 
@@ -1422,6 +1488,9 @@ Result যদি হয়:
 
 
 
+  
+
+
 14. INTERSECT — Common Records Validation
 - 🔹 কাজ: দুই table-এ একই record আছে কিনা check করা।
   
@@ -1446,6 +1515,7 @@ FROM Sales.OrdersArchive;
 
 
 
+  
 
 
 
@@ -1493,6 +1563,7 @@ A INTERSECT B
 
 
 
+  
   
 Final Best Practice
 /* ============================================================
