@@ -17,18 +17,24 @@ SELECT * FROM Employees;
 SELECT * FROM Orders;
 
 
+
+
+
+
+
 1. NO JOIN
 প্রথমে আলাদা আলাদা table থেকে data দেখি।
+   
 /* ================================================================
    NO JOIN
    Customers এবং Orders আলাদাভাবে দেখা হচ্ছে
 ================================================================ */
-
 SELECT *
 FROM Customers;
 
 SELECT *
 FROM Orders;
+
 
 🎯 Real Business Use
 Customer master দেখতে
@@ -40,16 +46,17 @@ JOIN করার আগে source data বুঝতে
 
   
 
+   
 
 2. INNER JOIN
 Customer + Order
+   
 /* ================================================================
    INNER JOIN
 
    শুধুমাত্র যেসব customer-এর matching order আছে
    সেগুলো দেখাবে।
 ================================================================ */
-
 SELECT
     c.CustomerID,
     c.FirstName,
@@ -60,6 +67,7 @@ SELECT
 FROM Customers AS c
 INNER JOIN Orders AS o
     ON c.CustomerID = o.CustomerID;
+
 
 
 🧠 কী হচ্ছে?
@@ -98,8 +106,11 @@ INNER JOIN বাদ দেবে
 
 
 
+   
+
 
 3. LEFT JOIN
+   
 /* ================================================================
    LEFT JOIN
 
@@ -107,7 +118,6 @@ INNER JOIN বাদ দেবে
    Order থাকলে order information দেখাবে।
    Order না থাকলে NULL দেখাবে।
 ================================================================ */
-
 SELECT
     c.CustomerID,
     c.FirstName,
@@ -138,15 +148,17 @@ Yes / No
 
 
 
+   
+
 
 4. RIGHT JOIN
+   
 /* ================================================================
    RIGHT JOIN
 
    Orders table-এর সব record দেখাবে।
    Matching customer থাকলে customer information দেখাবে।
 ================================================================ */
-
 SELECT
     c.CustomerID,
     c.FirstName,
@@ -159,6 +171,7 @@ RIGHT JOIN Orders AS o
     ON c.CustomerID = o.CustomerID;
 
 
+
 এখানে OrderID = 5010 থাকবে।
   
 কিন্তু:
@@ -169,16 +182,17 @@ Customer Name = NULL
 
 
 
+   
 
 
 5. RIGHT JOIN-এর Better Alternative — LEFT JOIN
 SQL Server development-এ অনেক developer LEFT JOIN prefer করেন, কারণ query পড়া সহজ হয়।
+   
 /* ================================================================
    RIGHT JOIN-এর LEFT JOIN alternative
 
    Orders-কে LEFT side-এ রাখছি।
 ================================================================ */
-
 SELECT
     c.CustomerID,
     c.FirstName,
@@ -219,7 +233,6 @@ LEFT JOIN
    Matching থাকলে একসাথে
    Matching না থাকলে NULL
 ================================================================ */
-
 SELECT
     c.CustomerID,
     c.FirstName,
@@ -230,6 +243,7 @@ SELECT
 FROM Customers AS c
 FULL JOIN Orders AS o
     ON c.CustomerID = o.CustomerID;
+
 
 
 এখানে দুই ধরনের unmatched data পাওয়া যাবে:
@@ -253,12 +267,12 @@ LEFT JOIN
 +
 WHERE right_table.key IS NULL
 Customers যারা কোনো order করেনি
+   
 /* ================================================================
    LEFT ANTI JOIN
 
    যেসব customer-এর কোনো order নেই
 ================================================================ */
-
 SELECT
     c.CustomerID,
     c.FirstName,
@@ -267,6 +281,8 @@ FROM Customers AS c
 LEFT JOIN Orders AS o
     ON c.CustomerID = o.CustomerID
 WHERE o.CustomerID IS NULL;
+
+
 
 
 Result:
@@ -281,6 +297,7 @@ Customer engagement analysis
 
 
 
+   
 
 
 
@@ -290,7 +307,6 @@ Customer engagement analysis
 
    যেসব order-এর matching customer নেই
 ================================================================ */
-
 SELECT
     o.OrderID,
     o.CustomerID,
@@ -304,6 +320,8 @@ WHERE c.CustomerID IS NULL;
 Result:
 OrderID = 5010
 CustomerID = 999
+
+   
 🎯 Real Data Engineering Use
 এটি Data Quality Check হিসেবে অত্যন্ত গুরুত্বপূর্ণ।
 Orders
@@ -324,10 +342,10 @@ Data Quality Issue
 
 
 9. RIGHT ANTI JOIN — LEFT JOIN Alternative
+   
 /* ================================================================
    RIGHT ANTI JOIN-এর LEFT JOIN alternative
 ================================================================ */
-
 SELECT
     o.OrderID,
     o.CustomerID,
@@ -344,14 +362,16 @@ WHERE c.CustomerID IS NULL;
 
 
 
+   
+
 
 10. LEFT JOIN দিয়ে INNER JOIN-এর Alternative
+   
 /* ================================================================
    INNER JOIN-এর LEFT JOIN alternative
 
    Matching records রাখছি
 ================================================================ */
-
 SELECT
     c.CustomerID,
     c.FirstName,
@@ -372,6 +392,8 @@ WHERE matched Order
    ↓
 শুধু matched rows
 ফলে INNER JOIN-এর মতো result পাওয়া যায়।
+
+   
 ⚠️ Best Practice
 সাধারণ matching data-এর জন্য সরাসরি:
 INNER JOIN
@@ -382,6 +404,8 @@ INNER JOIN
 
 
 
+   
+
 
 11. FULL ANTI JOIN
 এটি খুব গুরুত্বপূর্ণ Data Quality pattern।
@@ -389,12 +413,12 @@ INNER JOIN
 Customer without Order
         OR
 Order without Customer
+   
 /* ================================================================
    FULL ANTI JOIN
 
    দুই পাশের unmatched records খুঁজে বের করা
 ================================================================ */
-
 SELECT
     c.CustomerID,
     c.FirstName,
@@ -408,10 +432,12 @@ WHERE o.CustomerID IS NULL
    OR c.CustomerID IS NULL;
 
 
+
 এখানে আমরা পাব:
 Customer 107 → No Order
-
 Order 5010 → Customer 999 does not exist
+
+   
 🎯 Real Data Engineering
 ETL pipeline-এ:
 Source Customer
@@ -429,14 +455,16 @@ Unmatched Records
 
 
 
+   
+
 12. CROSS JOIN
 CROSS JOIN কোনো matching condition ব্যবহার করে না।
+   
 /* ================================================================
    CROSS JOIN
 
    প্রত্যেক customer-এর সাথে প্রত্যেক order-এর combination
 ================================================================ */
-
 SELECT
     c.CustomerID,
     c.FirstName,
@@ -446,20 +474,25 @@ FROM Customers AS c
 CROSS JOIN Orders AS o;
 
 
+
 আমাদের:
 7 Customers
 ×
 10 Orders
 =
 70 Rows
+
+   
 🎯 Real Business Use
 CROSS JOIN ব্যবহার করা যায়:
 Scenario generation
 Date × Product matrix
 Customer × Product analysis
 Sales target planning
+
+
+   
 ⚠️ Common Mistake
-  
 SELECT *
 FROM Customers
 CROSS JOIN Orders;
@@ -468,9 +501,9 @@ CROSS JOIN Orders;
 1,000,000 Customers
 ×
 10,000,000 Orders
+   
 অত্যন্ত বিশাল result তৈরি হতে পারে।
 তাই CROSS JOIN খুব সতর্কভাবে ব্যবহার করতে হবে।
-
 
 
 
@@ -491,6 +524,7 @@ Products
    ↓
 Employees
 join করব।
+   
 /* ================================================================
    MULTIPLE TABLE JOIN
 
@@ -498,7 +532,6 @@ join করব।
    প্রতিটি order-এর জন্য customer,
    product এবং salesperson-এর information দেখাও।
 ================================================================ */
-
 SELECT
     o.OrderID,
     o.OrderDate,
@@ -528,6 +561,7 @@ LEFT JOIN Employees AS e
     ON o.SalesPersonID = e.EmployeeID;
 
 
+
 🎯 Business Output
 একটি order এখন এমন meaningful information হবে:
 Order
@@ -537,10 +571,12 @@ Customer
 Product
   ↓
 Salesperson
+
+   
 অর্থাৎ raw transaction:
-  
 5001 | 101 | 201 | 301 | 750
-  
+
+   
 এর পরিবর্তে:
 Order 5001
 Ahmed Hassan
@@ -574,6 +610,7 @@ Employees
    ↓
 Departments
 এক query-তে সবগুলো আনা যায়।
+   
 /* ================================================================
    MULTI-TABLE BUSINESS REPORT
 
@@ -585,7 +622,6 @@ Departments
    + Employees
    + Departments
 ================================================================ */
-
 SELECT
     o.OrderID,
     o.OrderDate,
@@ -623,7 +659,6 @@ LEFT JOIN Employees AS e
 LEFT JOIN Departments AS d
     ON e.DepartmentID = d.DepartmentID;
 
-
 এটাই বাস্তব-world relational SQL-এর একটি গুরুত্বপূর্ণ pattern।
 
 
@@ -631,13 +666,16 @@ LEFT JOIN Departments AS d
 
 
 
+
+   
+
 15. JOIN + WHERE
 JOIN করে তারপর business filter করা যায়।
+   
 /* ================================================================
    Business Question:
    $500-এর বেশি sales-এর orders দেখাও
 ================================================================ */
-
 SELECT
     o.OrderID,
     CONCAT(c.FirstName, ' ', c.LastName) AS CustomerName,
@@ -662,11 +700,11 @@ WHERE o.Sales > 500;
 
 16. JOIN + GROUP BY
 এখন customer-wise total sales।
+   
 /* ================================================================
    Business Question:
    প্রত্যেক customer কত sales করেছে?
 ================================================================ */
-
 SELECT
     c.CustomerID,
     CONCAT(c.FirstName, ' ', c.LastName) AS CustomerName,
@@ -684,12 +722,13 @@ GROUP BY
 
 
 
+
 17. JOIN + GROUP BY + HAVING
+   
 /* ================================================================
    Business Question:
    যেসব customer $500-এর বেশি sales করেছে
 ================================================================ */
-
 SELECT
     c.CustomerID,
     CONCAT(c.FirstName, ' ', c.LastName) AS CustomerName,
@@ -722,13 +761,14 @@ Groups filter
 
 
 
+   
 
 
 18. JOIN + ORDER BY
+   
 /* ================================================================
    Customer-wise Sales Ranking
 ================================================================ */
-
 SELECT
     c.CustomerID,
     CONCAT(c.FirstName, ' ', c.LastName) AS CustomerName,
@@ -752,10 +792,10 @@ ORDER BY
 
 19. JOIN + COUNT
 Customer কতটি order করেছে?
+   
 /* ================================================================
    Number of Orders per Customer
 ================================================================ */
-
 SELECT
     c.CustomerID,
     CONCAT(c.FirstName, ' ', c.LastName) AS CustomerName,
@@ -783,12 +823,12 @@ ORDER BY
 
 
 20. JOIN + NULL Data Quality Check
+   
 /* ================================================================
    DATA QUALITY CHECK
 
    Orders-এর customer master-এ matching customer আছে কিনা
 ================================================================ */
-
 SELECT
     o.OrderID,
     o.CustomerID,
@@ -801,6 +841,7 @@ WHERE c.CustomerID IS NULL;
 
 Result:
 5010 | 999 | 750
+   
 এটা Data Engineering-এ একটি referential integrity issue।
 
 
@@ -810,12 +851,12 @@ Result:
 
 
 21. Product-এর কোনগুলো বিক্রি হয়নি?
+   
 /* ================================================================
    DATA QUALITY / PRODUCT ANALYSIS
 
    যেসব product-এর কোনো order নেই
 ================================================================ */
-
 SELECT
     p.ProductID,
     p.ProductName,
@@ -829,6 +870,8 @@ WHERE o.ProductID IS NULL;
 Result:
 ProductID = 205
 Printer
+
+   
 🎯 Business Meaning
 Printer inventory-তে আছে কিন্তু এখনো বিক্রি হয়নি।
 এটি inventory/sales analysis-এ useful।
@@ -838,13 +881,14 @@ Printer inventory-তে আছে কিন্তু এখনো বিক্�
 
 
 
+   
 
 
 22. Employee-এর Sales Performance
+   
 /* ================================================================
    Salesperson-wise Sales
 ================================================================ */
-
 SELECT
     e.EmployeeID,
     CONCAT(e.FirstName, ' ', e.LastName) AS SalesPersonName,
@@ -874,10 +918,10 @@ Orders
 Products
  ↓
 Categories
+   
 /* ================================================================
    CATEGORY-WISE SALES
 ================================================================ */
-
 SELECT
     ca.CategoryID,
     ca.CategoryName,
@@ -900,10 +944,10 @@ ORDER BY
 
 
 24. Country-wise Sales
+   
 /* ================================================================
    COUNTRY-WISE SALES
 ================================================================ */
-
 SELECT
     co.CountryName,
     SUM(o.Sales) AS TotalSales
@@ -923,22 +967,25 @@ ORDER BY
 
 
 
+
+
 25. কোন JOIN কখন ব্যবহার করবেন?
-JOIN	             কাজ	                           Real Business Use
-INNER JOIN	       Matching data	                 Customer + Orders
-LEFT JOIN	         Left-এর সব data	               All Customers + Orders
-RIGHT JOIN	       Right-এর সব data	             All Orders + Customers
-FULL JOIN	         দুই পাশের সব                    data	Data reconciliation
-LEFT ANTI	         Left-এর unmatched	             Customers without orders
-RIGHT ANTI	       Right-এর unmatched	             Orders without customers
-FULL ANTI	         দুই পাশের unmatched	             Data quality
-CROSS JOIN	       Every combination	             Scenario/matrix
-Multiple JOIN	     Multiple tables combine	       Business reporting
+JOIN	              কাজ	                           Real Business Use
+INNER JOIN	        Matching data	                  Customer + Orders
+LEFT JOIN	        Left-এর সব data	               All Customers + Orders
+RIGHT JOIN	        Right-এর সব data	               All Orders + Customers
+FULL JOIN	        দুই পাশের সব                      data	Data reconciliation
+LEFT ANTI	        Left-এর unmatched	               Customers without orders
+RIGHT ANTI	        Right-এর unmatched	               Orders without customers
+FULL ANTI	        দুই পাশের unmatched	            Data quality
+CROSS JOIN	        Every combination	               Scenario/matrix
+Multiple JOIN	     Multiple tables combine	         Business reporting
 
 
 
 
 
+   
 
 
 26. সবচেয়ে গুরুত্বপূর্ণ Best Practices ⭐
@@ -949,10 +996,12 @@ LEFT JOIN Customers AS c
 o, c, p, e query readable করে।
 
 
+   
 ✅ 2. JOIN condition পরিষ্কার রাখুন
 ON o.CustomerID = c.CustomerID
 অপ্রয়োজনীয় condition দিয়ে JOIN করবেন না।
 
+   
 
 ✅ 3. SELECT * production query-তে avoid করুন
 ❌
@@ -960,6 +1009,9 @@ SELECT *
 FROM Orders AS o
 JOIN Customers AS c
     ON o.CustomerID = c.CustomerID;
+
+
+
 ✅
 SELECT
     o.OrderID,
@@ -989,6 +1041,7 @@ Reconciliation
 
 
 
+   
 
 ✅ 5. RIGHT JOIN-এর বদলে LEFT JOIN অনেক সময় সহজ
 -- RIGHT JOIN
@@ -1003,6 +1056,10 @@ LEFT JOIN Customers AS c
 
 
 
+
+
+
+   
 
 27. Data Analyst + Data Engineer-এর জন্য JOIN-এর আসল ব্যবহার
                  SQL JOIN
@@ -1023,16 +1080,21 @@ LEFT JOIN Customers AS c
 
 
 
+
+   
+
+
 More Practice
+   
 1️⃣ INNER JOIN — Matching Data
 🎯 কাজ
 শুধু যেসব Customer-এর Order আছে, তাদের দেখাবে।
+   
 /* ================================================================
    INNER JOIN
    Customer + Orders
    শুধু matching data দেখাবে
 ================================================================ */
-
 SELECT
     c.CustomerID,
     c.FirstName,
@@ -1053,17 +1115,24 @@ Customers        Orders
    
 CustomerID = 107 দেখাবে না।
 কারণ তার কোনো Order নেই।
+
+   
 💼 Business Example
 "যেসব customer purchase করেছে তাদের sales দেখাও।"
 
 
 
 
+
+
+   
+
 2️⃣ LEFT JOIN — Left-এর সব Data
 🎯 কাজ
 Customers-এর সবাইকে দেখাবে।
 Order থাকলে Order information দেখাবে।
 Order না থাকলে NULL দেখাবে।
+   
 /* ================================================================
    LEFT JOIN
    সব Customer দেখাবে
@@ -1085,6 +1154,8 @@ LEFT JOIN Orders AS o
 Customer 101 → Order আছে → Sales আছে
 Customer 102 → Order আছে → Sales আছে
 Customer 107 → Order নেই  → NULL
+
+   
 💼 Business Example
 "আমাদের সব customer দেখাও এবং তারা purchase করেছে কিনা দেখাও।"
 
@@ -1095,10 +1166,14 @@ Customer 107 → Order নেই  → NULL
 
 
 
+   
+
+
 3️⃣ RIGHT JOIN — Right-এর সব Data
 🎯 কাজ
 Orders-এর সব record দেখাবে।
 Customer matching থাকলে customer information দেখাবে।
+   
 /* ================================================================
    RIGHT JOIN
    সব Order দেখাবে
@@ -1120,6 +1195,7 @@ RIGHT JOIN Orders AS o
 Order 5001 → Customer 101 → Match ✅
 
 Order 5010 → Customer 999 → No Match ❌
+
    
 তাই 5010 থাকবে।
 কিন্তু Customer information হবে:
@@ -1127,9 +1203,10 @@ Order 5010 → Customer 999 → No Match ❌
 CustomerID = NULL
 FirstName  = NULL
 LastName   = NULL
+
+   
 💼 Business Example
 "আমাদের সব order দেখাও, এমনকি customer master-এ customer না থাকলেও।"
-
 এটি Data Quality check-এর জন্য useful।
 
 
@@ -1137,9 +1214,13 @@ LastName   = NULL
 
 
 
+
+   
+
 4️⃣ FULL JOIN — দুই পাশের সব Data
 🎯 কাজ
 Customers-এর সব data + Orders-এর সব data।
+   
 /* ================================================================
    FULL JOIN
    Customer-এর সব record
@@ -1163,19 +1244,23 @@ FULL JOIN Orders AS o
 
 এখানে:
 Customer 101 + Order 5001 → Match
-
 Customer 107 + NULL       → Customer-এর Order নেই
-
 NULL + Order 5010         → Order-এর Customer নেই
+
+   
 💼 Business Example
 "Customer master এবং Orders-এর মধ্যে কোন data missing বা unmatched আছে?"
-
 এটি Data Reconciliation-এ খুব useful।
 
 
 
 
 
+
+
+
+
+   
 
 5️⃣ LEFT ANTI JOIN — Left-এর Unmatched
 SQL Server-এ LEFT ANTI JOIN নামে আলাদা keyword নেই।
@@ -1185,6 +1270,7 @@ LEFT JOIN
 WHERE RightTable.Key IS NULL
 ব্যবহার করি।
 🎯 Customer যাদের কোনো Order নেই
+   
 /* ================================================================
    LEFT ANTI JOIN
    যেসব Customer কোনো Order করেনি
@@ -1211,6 +1297,9 @@ Result
 
 
 
+   
+
+
 
 6️⃣ RIGHT ANTI JOIN — Right-এর Unmatched
 এবার খুঁজব:
@@ -1232,10 +1321,13 @@ WHERE c.CustomerID IS NULL;
 
 Result
 5010 | 999 | 750.00
+
+   
 কারণ:
-Orders.CustomerID = 999
-             ↓
+Orders.CustomerID = 999            ↓
 Customers.CustomerID = 999 নেই
+
+
 💼 Data Engineering Example
 এটি একটি orphan transaction।
 Order
@@ -1250,6 +1342,7 @@ Data Quality Issue ⚠️
 
 
 
+   
 
 
 7️⃣ FULL ANTI JOIN — দুই পাশের Unmatched
@@ -1258,6 +1351,7 @@ Data Quality Issue ⚠️
 Customer without Order
         +
 Order without Customer
+   
 /* ================================================================
    FULL ANTI JOIN
    দুই পাশের unmatched records
@@ -1277,11 +1371,11 @@ WHERE c.CustomerID IS NULL
 
 এখানে পাব:
 Customer 107 → কোনো Order নেই
-
 Order 5010 → Customer 999 নেই
+
+   
 💼 Business Example
 "Customer master এবং transaction table-এর সব mismatch বের করো।"
-
 এটি ETL/Data Warehouse validation-এ খুব useful।
 
 
@@ -1289,10 +1383,14 @@ Order 5010 → Customer 999 নেই
 
 
 
+
+   
+
 8️⃣ CROSS JOIN — Every Combination
 🎯 কাজ
 প্রত্যেক Customer-এর সাথে প্রত্যেক Product-এর combination তৈরি করবে।
 এখানে Orders ব্যবহার না করে Customers + Products ব্যবহার করলে business example আরও পরিষ্কার।
+   
 /* ================================================================
    CROSS JOIN
    প্রত্যেক Customer-এর সাথে প্রত্যেক Product-এর combination
@@ -1313,6 +1411,8 @@ CROSS JOIN Products AS p;
 6 Products
 =
 42 Rows
+
+   
 💼 Business Example
 ধরুন:
 "প্রত্যেক customer-কে প্রত্যেক product-এর জন্য sales offer তৈরি করতে হবে।"
@@ -1331,6 +1431,8 @@ CROSS JOIN খুব দ্রুত huge dataset তৈরি করতে প�
 
 
 
+   
+
 9️⃣ Multiple JOIN — Multiple Tables Combine
 এখন আসল Business Reporting।
 একটি Order-এর সাথে:
@@ -1342,6 +1444,7 @@ Products
   ↓
 Employees
 সব combine করব।
+   
 /* ================================================================
    MULTIPLE JOIN
    Orders + Customers + Products + Employees
@@ -1382,6 +1485,7 @@ LEFT JOIN Employees AS e
 
 
 
+
 🧠 এখানে কী হচ্ছে?
                  Customers
                      ↑
@@ -1390,6 +1494,7 @@ Orders ──────────────┼──────── Pro
   │                  │
   │                  │
   └────────────── Employees
+
    
 একটি Order থেকে আমরা পাচ্ছি:
 Order ID
@@ -1398,16 +1503,19 @@ Product
 Quantity
 Sales
 Salesperson
+
+   
 💼 Real Business Question
 "কোন customer কোন product কিনেছে, কত quantity কিনেছে, 
 কত sales হয়েছে এবং কোন salesperson sale করেছে?"
-
 এটাই বাস্তব-world business reporting query।
 
 
 
 
 
+
+   
 
 🔟 আরও Real — 7 Tables একসাথে
 এবার আমাদের তৈরি করা সব related tables ব্যবহার করি।
@@ -1485,6 +1593,7 @@ Sales Department
 
 
 
+   
 
 🧠 JOIN মনে রাখার সবচেয়ে সহজ Formula
 INNER JOIN
