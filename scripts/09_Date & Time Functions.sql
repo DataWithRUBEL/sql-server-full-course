@@ -33,6 +33,9 @@ dt.SystemEvents
 
 
 
+      
+
+
 2. Verify All Data
 -- =========================================================
 -- Verify the tables and sample records
@@ -50,6 +53,9 @@ GO
 
 
 
+
+
+      
 
 -- Date/Time Data Types 🕒  
 3. DATE
@@ -83,6 +89,9 @@ Best Practice
 
 
 
+
+      
+
 4. TIME
 শুধু সময় দরকার হলে।
 -- =========================================================
@@ -103,6 +112,10 @@ SELECT
 FROM dt.Orders
 WHERE OrderTime >= '09:00:00'
   AND OrderTime <  '18:00:00';
+
+
+
+
 
 
 
@@ -129,6 +142,9 @@ DATETIME2 > DATETIME
 
 
 
+      
+
+
 
 6. DATETIME2
 SQL Server-এ high precision date/time-এর জন্য সাধারণত preferred।
@@ -152,6 +168,9 @@ SELECT @PreciseDateTime;
 
 
 
+      
+
+
 7. SMALLDATETIME
 কম precision-এর পুরনো type।
 -- =========================================================
@@ -168,6 +187,8 @@ SELECT @SmallDateTime;
 যদি minute-level legacy compatibility প্রয়োজন না হয়।
 
 
+
+      
 
 
 
@@ -193,6 +214,9 @@ Multi-country application-এ অত্যন্ত useful।
 
 
 
+      
+
+
 -- Current Date/Time Functions 🕐
 9. GETDATE()
 বর্তমান server local date/time।
@@ -201,6 +225,8 @@ Syntax
 -- GETDATE returns current server local date/time
 -- =========================================================
 SELECT GETDATE() AS CurrentServerDateTime;
+
+
 
 
 
@@ -229,6 +255,8 @@ SELECT
 
 
 
+
+
 11. GETUTCDATE()
 UTC current time।
 -- =========================================================
@@ -240,12 +268,17 @@ SELECT GETUTCDATE() AS CurrentUTCDateTime;
 
 
 
+
+
+
 12. SYSDATETIME()
 Higher precision local server time।
 -- =========================================================
 -- SYSDATETIME returns high precision local server time
 -- =========================================================
 SELECT SYSDATETIME() AS CurrentSystemDateTime;
+
+
 
 
 
@@ -266,12 +299,14 @@ SELECT SYSUTCDATETIME() AS CurrentUTCDateTime;
 
 
 
+
 14. SYSDATETIMEOFFSET()
 Local server date/time + offset।
 -- =========================================================
 -- SYSDATETIMEOFFSET returns current date/time with offset
 -- =========================================================
 SELECT SYSDATETIMEOFFSET() AS CurrentDateTimeWithOffset;
+
 
 
 
@@ -292,12 +327,16 @@ SYSDATETIMEOFFSET()	   Local	            High	            ✅
 
 
 
+      
+
 16. Data Engineering Best Practice
 ETL/audit systems-এ অনেক ক্ষেত্রে:
 -- =========================================================
 -- Preferred high-precision UTC audit timestamp
 -- =========================================================
 SELECT SYSUTCDATETIME() AS ETL_LoadTimeUTC;
+
+
 
 
 
@@ -319,6 +358,9 @@ FROM dt.Orders;
 
 
 
+
+
+
 18. MONTH()
 -- =========================================================
 -- Extract month number from order date
@@ -332,6 +374,9 @@ FROM dt.Orders;
 
 
 
+
+
+
 19. DAY()
 -- =========================================================
 -- Extract day number from order date
@@ -340,6 +385,8 @@ SELECT
     OrderID,
     DAY(OrderDate) AS OrderDay
 FROM dt.Orders;
+
+
 
 
 
@@ -389,6 +436,10 @@ NANOSECOND
 
 
 
+
+
+      
+
 21. DATENAME()
 Date part-এর name return করে।
 Syntax
@@ -415,6 +466,10 @@ DATENAME(MONTH, date)	   August
 
 
 
+
+
+
+      
 
 -- Date Calculation 🔢
 22. DATEADD()
@@ -478,6 +533,7 @@ SELECT
 
 
 
+
 23. DATEDIFF()
 দুই date-এর boundary difference গণনা করে।
 Syntax
@@ -521,6 +577,10 @@ Exact birthday/anniversary logic-এর জন্য additional logic দরক�
 
 
 
+
+      
+
+
 24. DATEDIFF_BIG()
 DATEDIFF()-এর মতো, কিন্তু বড় BIGINT result দেয়।
 Syntax
@@ -551,6 +611,9 @@ SELECT
 
 
 
+
+
+      
 
 
 -- Date Boundary Functions 📆
@@ -600,6 +663,10 @@ SELECT
         EOMONTH(OrderDate, -1)
     ) AS MonthStart
 FROM dt.Orders;
+
+
+
+
 
 
 
@@ -662,6 +729,10 @@ FROM dt.Orders;
 
 
 
+
+
+
+
 27. EOMONTH vs DATETRUNC
   
 Function	             Purpose
@@ -673,7 +744,10 @@ DATETRUNC(DAY,...)	   Day-এর শুরু
 
 
 
-  
+
+
+
+      
 
 -- Date/Time Construction 🏗️
 28. DATEFROMPARTS()
@@ -697,6 +771,10 @@ Real Data Example
 -- =========================================================
 SELECT
     DATEFROMPARTS(2026, 8, 29) AS BusinessDate;
+
+
+
+
 
 
 
@@ -730,6 +808,9 @@ SELECT
         1234567,
         7
     ) AS ConstructedTime;
+
+
+
 
 
 
@@ -773,6 +854,8 @@ SELECT
 
 
 
+
+
 31. DATETIME2FROMPARTS()
 Syntax
 -- =========================================================
@@ -805,6 +888,8 @@ SELECT
         1234567,
         7
     ) AS ConstructedDateTime2;
+
+
 
 
 
@@ -857,6 +942,8 @@ SELECT
 
 
 
+
+
 33. SMALLDATETIMEFROMPARTS()
 Syntax
 -- =========================================================
@@ -883,6 +970,9 @@ SELECT
         14,
         30
     ) AS ConstructedSmallDateTime;
+
+
+
 
 
 
@@ -919,6 +1009,9 @@ SELECT
     OrderDateTime,
     CAST(OrderDateTime AS TIME) AS OrderTimeOnly
 FROM dt.Orders;
+
+
+
 
 
 
@@ -962,6 +1055,9 @@ FROM dt.Orders;
 
 
 
+
+
+
 36. TRY_CAST()
 Invalid conversion হলে error না দিয়ে NULL return করে।
 Syntax
@@ -989,6 +1085,9 @@ ETL Example ⭐
 SELECT
     TRY_CAST('2026-08-29' AS DATE) AS CleanDate,
     TRY_CAST('NotARealDate' AS DATE) AS BadDate;
+
+
+
 
 
 
@@ -1031,6 +1130,9 @@ Data Quality Check
 Silver
 
 
+
+
+      
 
 
 
@@ -1079,6 +1181,10 @@ SELECT
 
 
 
+
+
+
+      
 
 -- Time Zone 🌍
 39. AT TIME ZONE
@@ -1133,6 +1239,9 @@ FROM dt.SystemEvents;
 
 
 
+
+
+
 40. SWITCHOFFSET()
 DATETIMEOFFSET-এর offset change করে।
 Syntax
@@ -1182,6 +1291,11 @@ Different offset representation
 
 
 
+
+      
+
+
+
 41. TODATETIMEOFFSET()
 একটি datetime2/date-time value-কে specified offset দিয়ে datetimeoffset বানায়।
 Syntax
@@ -1216,6 +1330,10 @@ TODATETIMEOFFSET	 Date/time-এর সাথে offset attach
 
 
 
+
+      
+
+
 -- NULL & Logic 🧠
 42. ISNULL()
 NULL-এর জায়গায় replacement value।
@@ -1238,6 +1356,9 @@ SELECT
         'Not Delivered'
     ) AS DeliveryStatus
 FROM dt.Orders;
+
+
+
 
 
 
@@ -1271,16 +1392,20 @@ FROM dt.Orders;
 
 ISNULL vs COALESCE
   
-Feature	           ISNULL	                COALESCE
-Arguments	          2	                    2+
-Standard	          SQL Server specific	  ANSI SQL
+Feature	            ISNULL	              COALESCE
+Arguments	            2	                    2+
+Standard	            SQL Server specific	  ANSI SQL
 Simple replacement	⭐⭐⭐⭐⭐	        ⭐⭐⭐⭐
-Multiple fallback	   ❌	                ✅
+Multiple fallback	      ❌	                    ✅
 
 
 
 
 
+
+
+
+      
 
 44. NULLIF()
 দুই expression equal হলে NULL return করে।
@@ -1317,6 +1442,7 @@ SELECT
         / NULLIF(SUM(Quantity), 0) AS AverageUnitPrice
 FROM dt.OrderItems
 GROUP BY OrderID;
+
 
 
 
@@ -1369,6 +1495,7 @@ FROM dt.Orders;
 
 
 
+
 46. Real Business Analysis 📊
 এখন আমরা সব functions একসাথে ব্যবহার করব।
 
@@ -1389,6 +1516,9 @@ GROUP BY
     DATETRUNC(MONTH, o.OrderDate)
 ORDER BY
     MonthStart;
+
+
+
 
 
 
@@ -1448,6 +1578,7 @@ ORDER BY
 
 
 
+
 49. Order Delivery Duration
 -- =========================================================
 -- Calculate order-to-delivery duration
@@ -1473,6 +1604,7 @@ SELECT
             ) + ' Days'
     END AS DeliveryDuration
 FROM dt.Orders;
+
 
 
 
@@ -1512,6 +1644,7 @@ FROM dt.EmployeeAttendance;
 
 
 
+
 51. Orders During Business Hours
 -- =========================================================
 -- Identify orders placed during business hours
@@ -1529,6 +1662,7 @@ SELECT
         ELSE 'Outside Business Hours'
     END AS TimeCategory
 FROM dt.Orders;
+
 
 
 
@@ -1559,6 +1693,8 @@ Production logic-এ DATEPART(WEEKDAY)-এর ওপর নির্ভর ক�
 
 
 
+      
+
 
 
 
@@ -1587,6 +1723,8 @@ WHERE OrderDate >= DATETRUNC(
 
 
 
+      
+
 
 
 
@@ -1602,6 +1740,8 @@ WHERE OrderDate >= DATEADD(
         -30,
         CAST(GETDATE() AS DATE)
       );
+
+
 
 
 
@@ -1636,6 +1776,9 @@ FROM dt.Employees;
 
 
 
+
+
+
 56. Employee Age Analysis
 -- =========================================================
 -- Calculate approximate age using year difference
@@ -1658,6 +1801,9 @@ FROM dt.Employees;
 
 
 
+
+
+      
 
 -- Data Engineering Examples ⚙️
 57. Incremental ETL Watermark
@@ -1691,6 +1837,8 @@ Silver / Gold
 
 
 
+      
+
 
 
 58. ETL Daily Window
@@ -1721,6 +1869,9 @@ pattern ব্যবহার করা ভালো।
 
 
 
+      
+
+
 
 59. UTC Audit Time
 -- =========================================================
@@ -1729,6 +1880,11 @@ pattern ব্যবহার করা ভালো।
 -- =========================================================
 SELECT
     SYSUTCDATETIME() AS LoadDateTimeUTC;
+
+
+
+
+
 
 
 
@@ -1750,6 +1906,9 @@ SELECT
         AS KuwaitTime
 
 FROM dt.SystemEvents;
+
+
+
 
 
 
@@ -1797,6 +1956,9 @@ FROM ETLEvents;
 
 
 
+
+
+
 62. Date Dimension Thinking 🏆
 Data Analyst/Data Engineer হিসেবে Date Dimension খুব গুরুত্বপূর্ণ।
 আমরা একটি Date Dimension তৈরি করতে পারি।
@@ -1820,6 +1982,10 @@ GO
 
 
 
+
+
+
+      
 
 
 
@@ -1892,6 +2058,9 @@ GO
 
 
 
+      
+
+
 64. Date Dimension ব্যবহার করে Sales
 -- =========================================================
 -- Join sales with Date Dimension
@@ -1930,6 +2099,9 @@ ORDER BY
 
 
 
+
+
+
 65. Important Real-World Patterns ⭐
     Date Filtering — Bad vs Good
 
@@ -1958,6 +2130,8 @@ WHERE OrderDateTime >= '2026-08-10 00:00:00'
 
 
 
+
+
 66. -- Don't Use FORMAT() for Heavy ETL
 আপনার এই Date/Time list-এ FORMAT() নেই, কারণ এটি Date/Time function-এর core analytical function নয়।
 Reporting display-এর জন্য ব্যবহার করা যায়, কিন্তু large dataset-এর ETL/query transformation-এ সাধারণত CONVERT()/CAST() বেশি performant।
@@ -1965,6 +2139,8 @@ Reporting display-এর জন্য ব্যবহার করা যায়,
 
 
 
+
+      
 
 67. Avoid Ambiguous Date Strings
 ❌ Avoid
@@ -1985,6 +2161,8 @@ SELECT CAST('2026-08-09' AS DATE);
 
 
 
+
+      
 
 
 
@@ -2043,6 +2221,8 @@ SELECT CAST('2026-08-09' AS DATE);
 
 
 
+      
+
 
 
 69. Industry Best Practices 🏆
@@ -2074,6 +2254,9 @@ SELECT CAST('2026-08-09' AS DATE);
 
 
 
+
+
+      
 
 70. Hands-on Project 🎯
 Project: E-Commerce Sales & ETL Date-Time Analytics
@@ -2137,19 +2320,3 @@ Level 4 — Data Engineering 🧠
               Power BI
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  
