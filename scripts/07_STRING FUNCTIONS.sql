@@ -11,6 +11,7 @@ StringFunctionsDB
 │
 └── dbo.CustomerTags
 
+
    
 বাস্তব scenario
 ধরুন একটি retail company-এর বিভিন্ন source system থেকে data আসছে:
@@ -32,6 +33,7 @@ Source data-তে সমস্যা আছে:
 'Electronics|Laptop|Dell'
 'Customer,VIP,Online'
 
+
    
 String functions ব্যবহার করে আমরা এগুলোকে:
 Clean
@@ -47,6 +49,8 @@ Transform
 
 
 
+
+   
 
 
 2. String Functions 🔥
@@ -103,6 +107,9 @@ STRING FUNCTIONS
 
 
 
+   
+
+
 3.LOWER() 🔤
 কী জন্য?
 সব character lowercase করার জন্য।
@@ -143,6 +150,8 @@ FROM dbo.Customers;
 
 
 
+
+
 4. UPPER() 🔤
 সব character uppercase করে।
 -- =========================================================
@@ -167,6 +176,9 @@ Business category/status normalize করতে:
 UPPER(TRIM(customer_status))
 
 
+
+
+   
 
 
 5. TRIM() 🧹
@@ -194,6 +206,8 @@ FROM dbo.Customers;
 
 
 
+
+
 6. LTRIM()
 Left-side spaces remove করে।
 -- =========================================================
@@ -203,6 +217,8 @@ SELECT
     first_name,
     LTRIM(first_name) AS left_clean_name
 FROM dbo.Customers;
+
+
 
 
 
@@ -229,6 +245,8 @@ RTRIM()	    ডান পাশ
 
 
 
+
+   
 
 
 8. REPLACE() 🔄
@@ -281,6 +299,8 @@ FROM dbo.Customers;
 
 
 
+
+
 9. TRANSLATE() 🔤
 একাধিক character একসাথে অন্য character দিয়ে translate করে।
 Syntax
@@ -312,6 +332,8 @@ text transformation	       character transformation
 
 
 
+   
+
 
 
 10. LEFT() ✂️
@@ -337,6 +359,9 @@ MON = Monitor
 
 
 
+
+   
+
 11. RIGHT()
 ডান দিক থেকে characters নেয়।
 -- =========================================================
@@ -347,6 +372,8 @@ SELECT
     product_code,
     RIGHT(TRIM(product_code), 3) AS product_number
 FROM dbo.Products;
+
+
 
 
 
@@ -395,6 +422,9 @@ FROM dbo.Orders;
 
 
 
+
+
+
 13. STUFF() 🛠️
 একটি string-এর নির্দিষ্ট position থেকে characters remove করে নতুন text insert করে।
 Syntax
@@ -436,6 +466,9 @@ WHERE email IS NOT NULL;
 
 
 
+
+
+
 14. REVERSE() 🔄
 String reverse করে।
 -- =========================================================
@@ -451,6 +484,8 @@ Advanced use
 শেষ occurrence খুঁজতে REVERSE() + CHARINDEX() ব্যবহার করা যায়।
 
 
+
+   
 
 
 
@@ -500,6 +535,9 @@ WHERE email IS NOT NULL;
 
 
 
+
+
+
 17. CHARINDEX() + SUBSTRING() — Email Domain
 -- =========================================================
 -- Extract email domain
@@ -515,6 +553,9 @@ SELECT
     ) AS email_domain
 FROM dbo.Customers
 WHERE email IS NOT NULL;
+
+
+
 
 
 
@@ -562,6 +603,9 @@ Expected result ideally:
 
 
 
+   
+
+
 19. CONCAT() 🔗
 Multiple values combine করে।
 সবচেয়ে বড় সুবিধা: NULL handling।
@@ -577,6 +621,9 @@ SELECT
         TRIM(last_name)
     ) AS full_name
 FROM dbo.Customers;
+
+
+
 
 
 
@@ -606,6 +653,10 @@ London, UK
 
 
 
+
+
+   
+
 21. CONCAT() বনাম CONCAT_WS()
 Function	      Best use
 CONCAT()	      arbitrary values combine
@@ -620,6 +671,10 @@ SELECT
     CONCAT(TRIM(first_name), ' ', TRIM(last_name)) AS full_name,
     CONCAT_WS(', ', TRIM(city), TRIM(country)) AS location
 FROM dbo.Customers;
+
+
+
+
 
 
 
@@ -679,6 +734,9 @@ GROUP BY category;
 
 
 
+
+
+
 23. STRING_SPLIT() ✂️🔥
 একটি delimited stringকে multiple rows-এ split করে।
    
@@ -721,6 +779,9 @@ ORDER BY customer_count DESC;
 
 
 
+
+
+
 24. STRING_SPLIT() — Data Engineering Use 🔥
    
 Source system থেকে এভাবে data আসতে পারে:
@@ -745,6 +806,8 @@ customer_id | tag
 
 
 
+
+   
 
 
 
@@ -775,6 +838,9 @@ WHERE LEN(TRIM(first_name)) < 2;
 
 
 
+
+
+
 26. LEN() Important Detail ⚠️
 LEN() trailing spaces count করে না।
    
@@ -791,6 +857,11 @@ Result:
 
 
 
+
+
+
+
+   
 
 
 
@@ -834,6 +905,10 @@ Power BI/reporting layer-এ formatting করা বেশি appropriate।
 
 
 
+   
+
+
+
 
 28. REPLICATE() 🔁
 একটি string নির্দিষ্ট সংখ্যক বার repeat করে।
@@ -868,6 +943,10 @@ Concept:
 
 
 
+
+   
+
+
 29. SPACE() ␠
 Specified number of spaces তৈরি করে।
 -- =========================================================
@@ -880,6 +959,10 @@ SELECT
         SPACE(5),
         'Status'
     ) AS formatted_text;
+
+
+
+
 
 
 
@@ -912,6 +995,9 @@ SELECT
     quantity,
     unit_price / NULLIF(quantity, 0) AS price_per_unit
 FROM dbo.OrderItems;
+
+
+
 
 
 
@@ -952,6 +1038,9 @@ FROM dbo.Customers;
 
 
 
+
+
+
 32. NULLIF() বনাম COALESCE()
    
 Function	       Purpose
@@ -969,6 +1058,9 @@ NULL → Value
 
 
 
+
+
+   
 
 
 33. ASCII() 🔢
@@ -991,6 +1083,10 @@ SELECT
     first_name,
     ASCII(first_name) AS first_character_ascii
 FROM dbo.Customers;
+
+
+
+
 
 
 
@@ -1025,6 +1121,11 @@ SELECT
 
 
 
+
+
+
+
+
 35. UNICODE() 🌍
 Unicode character-এর numeric code return করে।
 বিশেষ করে multilingual data-এর জন্য useful।
@@ -1033,6 +1134,10 @@ Unicode character-এর numeric code return করে।
 -- =========================================================
 SELECT
     UNICODE(N'অ') AS unicode_code;
+
+
+
+
 
 
 
@@ -1067,6 +1172,11 @@ SELECT
 
 
 
+
+
+
+
+
 37. ASCII বনাম UNICODE
    
 Function	     Use
@@ -1086,6 +1196,10 @@ NCHAR()
 
 
 
+
+
+
+   
 
 
 38. একটি Complete Customer Cleaning Query 🧹🔥
@@ -1159,6 +1273,10 @@ CONCAT_WS
 
 
 
+
+   
+
+
 39. Email Validation Project 📧
 Data quality-এর জন্য খুব useful।
 -- =========================================================
@@ -1195,6 +1313,9 @@ FROM dbo.Customers;
 
 
 
+
+
+
 40. Phone Data Quality Project 📱
 -- =========================================================
 -- Detect phone numbers containing unexpected characters
@@ -1220,6 +1341,13 @@ AND PATINDEX('%[^0-9 +()-]%', phone) > 0;
 
 
 
+
+
+
+
+   
+
+
 41. Product Code Validation 📦
 -- =========================================================
 -- Validate product codes
@@ -1234,6 +1362,12 @@ WHERE PATINDEX(
     '%[^A-Z0-9 -]%',
     UPPER(TRIM(product_code))
 ) > 0;
+
+
+
+
+
+
 
 
 
@@ -1255,6 +1389,13 @@ SELECT
         CHARINDEX('-', TRIM(product_code)) - 1
     ) AS product_prefix
 FROM dbo.Products;
+
+
+
+
+
+
+
 
 
 
@@ -1314,6 +1455,10 @@ FROM dbo.vw_CleanCustomers;
 
 
 
+
+
+
+
 44. Customer Tags Analysis 📊
 -- =========================================================
 -- Split customer tags into individual rows
@@ -1345,6 +1490,11 @@ WHERE TRIM(value) = 'VIP';
 
 
 
+
+
+
+
+
 45. STRING_AGG + STRING_SPLIT 🔥
 এটি real reporting-এ খুব powerful combination।
 প্রথমে split:
@@ -1370,6 +1520,10 @@ SELECT
 FROM dbo.Customers
 CROSS APPLY STRING_SPLIT(tags, ',')
 GROUP BY customer_id;
+
+
+
+
 
 
 
@@ -1421,6 +1575,10 @@ INNER JOIN dbo.Products AS p
 এখানে string functions শুধুমাত্র cleaning-এর জন্য নয়—analytical dataset তৈরির অংশ হিসেবেও কাজ করছে।
 
 
+
+
+
+   
 
 
 
@@ -1493,6 +1651,8 @@ FROM dbo.Customers;
 
 
 
+
+
 48. Important String Function Cheat Sheet 📚
    
 Function	           মূল কাজ	               Real-world use
@@ -1526,6 +1686,11 @@ UNICODE()	        char → Unicode	         International data
 NCHAR()	           Unicode → char	         Unicode generation
 
 
+
+
+
+
+   
 
 
 
@@ -1596,6 +1761,11 @@ STRING_AGG(product_name, ', ')
 
 
 
+
+
+   
+
+
 50. Final Practice Project 🎯
 এই database দিয়ে আপনার hands-on project এমন হবে:
                  StringFunctionsDB
@@ -1625,6 +1795,7 @@ Normalize Parse    DQ Checks
 
 
    
+   
 🎯 Practice Tasks
 1. সব customer name clean করুন
 2. সব email lowercase করুন
@@ -1651,6 +1822,10 @@ Normalize Parse    DQ Checks
 23. cleaned customer view তৈরি করুন
 24. Silver-layer transformation তৈরি করুন
 25. Data Quality report তৈরি করুন
+
+
+
+
 
 
 
